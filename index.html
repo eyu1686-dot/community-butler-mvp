@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="邻里小站">
-  <meta name="description" content="青禾里小区的生鲜直采与邻里服务演示。">
+  <meta name="description" content="阳光花园一期小区的生鲜直采与邻里服务演示。">
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="./assets/icon-180.png">
   <link rel="icon" href="./assets/icon-192.png">
@@ -15,14 +15,19 @@
   <script defer src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script defer src="./app.js"></script>
-  <title>邻里小站 · 青禾里</title>
+  <title>邻里小站 · 阳光花园一期</title>
 </head>
 <body>
   <header class="topbar shell">
-    <div class="brand"><img src="./assets/icon-192.png" width="42" height="42" alt=""><div><strong>邻里小站</strong><span>青禾里 · 小区生活服务</span></div></div>
+    <div class="brand"><img src="./assets/icon-192.png" width="42" height="42" alt=""><div><strong>邻里小站</strong><span>阳光花园一期 · 专属管家站</span></div></div>
+    <button class="quality-badge" data-action="quality">本小区品质公约</button>
     <button class="bag" data-action="bag" aria-label="购物袋"><i data-lucide="shopping-bag" aria-hidden="true"></i><span>购物袋</span><b id="bag-count" hidden>0</b></button>
   </header>
   <main class="shell" id="main"></main>
+  <aside id="checkout-bar" class="checkout-bar" hidden aria-label="购物车结算">
+    <div><small>已选 0 份</small><strong>¥0.00</strong></div>
+    <button class="primary" data-action="bag">去结算</button>
+  </aside>
   <nav class="nav" aria-label="主导航">
     <div class="nav-inner">
       <a href="#fresh"><i data-lucide="leaf"></i>生鲜直采</a>
