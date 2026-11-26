@@ -264,18 +264,19 @@ function availableWindows(item) {
   return item.category === 'errands' ? ['尽快送达', ...windows] : windows;
 }
 
-function bookingOptions(values) {
-  return values.map(value => `<option>${value}</option>`).join('');
+function bookingOptions(values, selected) {
+  return values.map(value => `<option ${value === selected ? 'selected' : ''}>${value}</option>`).join('');
 }
 
-function showBooking(id) {
+function showBooking(id, previous) {
   const item = neighborhoodServices.find(service => service.id === id);
   if (!item) return;
+  const [building, room] = previous?.address.match(/^(.*栋) (\d+) 室$/)?.slice(1) || [];
   openInfo('预约下单', `<p class="booking-item"><strong>${item.name}</strong> <span>${servicePrice(item.price)} ${item.unit}</span></p>
     <form id="booking-form" data-service="${item.id}">
       <div class="booking-address">
-        <label class="field">楼栋<select name="building" required><option value="">选择楼栋</option>${bookingOptions(buildings)}</select></label>
-        <label class="field">门牌号<select name="room" required><option value="">选择门牌号</option>${bookingOptions(rooms)}</select></label>
+        <label class="field">楼栋<select name="building" required><option value="">选择楼栋</option>${bookingOptions(buildings, building)}</select></label>
+        <label class="field">门牌号<select name="room" required><option value="">选择门牌号</option>${bookingOptions(rooms, room)}</select></label>
       </div>
       <label class="field">期望上门时间段<select name="slot" required><option value="">选择时间段</option>${bookingOptions(availableWindows(item))}</select></label>
       <label class="field">备注说明（选填）<textarea name="notes" rows="3" maxlength="200" placeholder="可填写服务内容或上门说明"></textarea></label>
@@ -284,17 +285,23 @@ function showBooking(id) {
 }
 
 function orderDetails(order) {
+  const reorder = `<button class="secondary" data-action="reorder" data-id="${escapeHtml(order.id)}">再次下单</button>`;
   if (order.kind === 'service') {
     const { address, slot, notes, unit } = order.booking;
-    return `<div class="service-order">
+    return `<article class="service-order community-order">
       <strong>${escapeHtml(order.items[0].name)}</strong>
       <p class="muted">${escapeHtml(address)} · ${escapeHtml(slot)}</p>
       ${notes ? `<p class="muted">备注：${escapeHtml(notes)}</p>` : ''}
       <p class="muted">${escapeHtml(order.id)} · ${servicePrice(order.total)} ${escapeHtml(unit)} · ${escapeHtml(order.time)}</p>
-      <span class="status">${escapeHtml(claimStatus(order) || order.status)}</span>
-    </div>`;
+      <div class="order-actions"><span class="status">${escapeHtml(claimStatus(order) || order.status)}</span>${reorder}</div>
+    </article>`;
   }
-  return `<div class="row"><div><strong>${order.id} · ${money(order.total)}</strong><p class="muted">${order.items.map(item => `${item.name} × ${item.quantity}`).join('、')}</p><small>${order.time} · ${escapeHtml(order.deliveryLabel || deliveryOptions.pickup.label)}</small></div><span class="status">${claimStatus(order) || (order.demo ? '已完成' : deliveryOptions[order.delivery]?.status || '待自提')}</span></div>`;
+  return `<article class="service-order community-order">
+    <strong>${order.items.map(item => `${escapeHtml(item.name)} × ${item.quantity}`).join('、')}</strong>
+    <p class="muted">${escapeHtml(order.id)} · ${money(order.total)}</p>
+    <p class="muted">${escapeHtml(order.time)} · ${escapeHtml(order.deliveryLabel || deliveryOptions.pickup.label)}</p>
+    <div class="order-actions"><span class="status">${claimStatus(order) || (order.demo ? '已完成' : deliveryOptions[order.delivery]?.status || '待自提')}</span>${reorder}</div>
+  </article>`;
 }
 
 const issueTypes = ['坏果/磕碰','分量不足','服务不满意'];
@@ -425,12 +432,112 @@ function submitClaim(form) {
   completeReviews();
 }
 
+function orderSavings(items) {
+  return items.reduce((sum, item) => {
+    const original = direct.find(product => product.id === item.id)?.tiers[0] ?? item.price;
+    return sum + Math.max(0, original - item.price) * item.quantity;
+  }, 0);
+}
+
+const pickupCode = 'YG-3-02-0816';
+const inviteCode = 'YG3-28';
+let dashboardOpen = false;
+
+const dashboardMetrics = [
+  ['覆盖户数','1,500 户','阳光花园一期'],
+  ['种子渗透率','21.3%','320 户 / 1,500 户'],
+  ['生鲜周复购率','64%','按周统计下单住户'],
+  ['单户获客成本','¥3.2','种子住户获客口径'],
+  ['生鲜平均毛利率','28.5%','生鲜销售额口径'],
+  ['综合月流水预估','¥42,800','生鲜及社区服务'],
+];
+const buildingReach = [
+  ['1 栋',18,100], ['2 栋',22,100], ['3 栋',28,100], ['5 栋',16,100], ['6 栋',25,100],
+];
+
+function communityDashboard() {
+  return `<section class="panel dashboard" aria-labelledby="dashboard-title">
+    <h2 id="dashboard-title">单小区经营看板</h2>
+    <p class="muted">路演情景数据 · 月流水为预估</p>
+    <dl class="dashboard-metrics">${dashboardMetrics.map(([label,value,detail]) => `<div>
+      <dt>${label}</dt><dd>${value}</dd><small>${detail}</small>
+    </div>`).join('')}</dl>
+  </section>
+  <section class="panel"><h2>楼栋渗透热力</h2>
+    <p class="muted">示例楼栋 · 已加入户数 / 楼栋总户数</p>
+    <div class="reach-chart">${buildingReach.map(([building,joined,total]) => `
+      <div class="reach-row"><span>${building}</span>
+        <div class="reach-track" role="img" aria-label="${building}，${joined} 户加入，共 ${total} 户">
+          <span style="width:${joined / total * 100}%;opacity:${0.45 + joined / 55}"></span>
+        </div><strong>${joined}%</strong>
+      </div>`).join('')}</div>
+  </section>
+  <section class="panel model"><h2>单小区复制模型</h2><ol>
+    <li><strong>从楼栋招募种子住户</strong><p>楼长邀请邻居，达到楼栋目标后解锁配送权益，用每户获客成本核算启动投入。</p></li>
+    <li><strong>用生鲜直采建立复购</strong><p>每晚汇总订单后次晨采购，集中履约到小区，跟踪周复购率和生鲜毛利率。</p></li>
+    <li><strong>用本地服务扩充流水</strong><p>通过管家验收、售后和口碑积累复购，覆盖跑腿、维修与保洁，再按楼栋节奏复制到相邻小区。</p></li>
+  </ol></section>`;
+}
+
 function communityPage() {
+  const header = `<header class="page-head community-head">
+    <div><h1>我的小区</h1><p>阳光花园一期</p></div>
+    <button class="secondary dashboard-toggle" data-action="dashboard" aria-pressed="${dashboardOpen}">经营看板</button>
+  </header>`;
+  if (dashboardOpen) return header + communityDashboard();
+  const savings = state.orders.reduce((sum, order) => sum + (order.savings ?? orderSavings(order.items)), 0);
+  const protectedOrders = state.orders.filter(order => order.claim && !order.claim.reviewUntil).length;
   const orders = state.orders.map(orderDetails).join('');
-  return pageHead('我的小区', '阳光花园一期 · 单小区服务演示') + `
-    <section class="panel"><h2>北门管家自提点</h2><p>阳光花园一期小区北门内侧</p><p class="muted">自提时间 17:00–20:00</p></section>
+  return header + `
+    <section class="panel resident-card">
+      <div class="resident-head"><div><h2>3栋2单元</h2><p class="muted">北门管家自提点 · 17:00–20:00</p></div>
+        <button class="secondary" data-action="pickup-code">我的提货码</button></div>
+      <dl class="resident-stats"><div><dt>累计节省</dt><dd>${money(savings)}</dd></div>
+        <div><dt>已获售后保障</dt><dd>${protectedOrders} 次</dd></div></dl>
+    </section>
+    <section class="panel invite-card"><h2>申请成为本栋楼长 / 邀请邻居</h2>
+      <label class="progress-label"><span>3栋已有 28 户加入</span><progress value="28" max="30"></progress></label>
+      <p class="muted">再邀 2 户解锁本栋专属免配送费特权。</p>
+      <div class="invite-actions"><button class="secondary" data-action="invite">邀请邻居 · ${inviteCode}</button>
+        <button class="primary" data-action="leader" ${state.leaderApplied ? 'disabled' : ''}>${state.leaderApplied ? '楼长申请已登记' : '申请成为楼长'}</button></div>
+    </section>
     <section class="panel"><h2 id="orders-title" tabindex="-1">我的订单</h2>${orders || '<p class="muted">暂无订单</p>'}</section>
     <section class="panel"><h2>添加到 iPhone 主屏幕</h2><p>在 Safari 点按「分享」，选择「添加到主屏幕」。如出现「作为网页 App 打开」选项，请保持开启。</p></section>`;
+}
+
+function reorder(id) {
+  const order = state.orders.find(item => item.id === id);
+  if (!order) return;
+  if (order.kind === 'service') {
+    showBooking(order.items[0].id, order.booking);
+    return;
+  }
+  syncBatch();
+  let added = 0;
+  let requested = 0;
+  for (const line of order.items) {
+    requested += line.quantity;
+    const item = [...direct, ...products].find(product => product.id === line.id);
+    if (!item || (item.tiers && !batchTime().remaining)) continue;
+    const capacity = item.tiers ? limit - joined(item) : 99 - (state.cart[item.id] || 0);
+    const quantity = Math.max(0, Math.min(capacity, line.quantity));
+    if (!quantity) continue;
+    state.cart[item.id] = (state.cart[item.id] || 0) + quantity;
+    added += quantity;
+  }
+  if (!added) {
+    notify('原单商品已截单或暂无可购份数');
+    return;
+  }
+  const saved = save();
+  refreshBag();
+  showBag();
+  if (added < requested || !saved) {
+    const note = document.createElement('p');
+    note.className = 'cutoff';
+    note.textContent = added < requested ? `原单部分商品已截单或满额，已加入 ${added} 份。` : '购物袋仅保留在当前页面。';
+    dialogContent.querySelector('.dialog-head').after(note);
+  }
 }
 
 function render() {
@@ -521,6 +628,7 @@ function checkout() {
   state.orders.unshift({
     id:'YG-' + Date.now().toString(36).toUpperCase(),
     items, total:cartTotal(items) + option.fee, time:timestamp(),
+    savings:orderSavings(items),
     delivery, deliveryFee:option.fee, deliveryLabel:option.label,
   });
   for (const item of items) {
@@ -536,6 +644,7 @@ function checkout() {
 }
 
 function showOrders(message, saved) {
+  dashboardOpen = false;
   if (location.hash !== '#community') history.pushState(null, '', '#community');
   render();
   document.querySelector('#orders-title').focus();
@@ -625,6 +734,42 @@ document.addEventListener('click', event => {
       button.textContent = `♥ ${Number(wish.voted)}`;
       break;
     }
+    case 'dashboard':
+      dashboardOpen = !dashboardOpen;
+      render();
+      main.querySelector('.dashboard-toggle').focus({ preventScroll:true });
+      break;
+    case 'pickup-code':
+      openInfo('我的提货码', `<div class="pickup-code"><img src="./assets/pickup-qr.png" width="220" height="220" alt="提货码二维码 ${pickupCode}"><strong>${pickupCode}</strong><p>北门管家自提点 · 演示提货码</p></div>`);
+      break;
+    case 'invite':
+      openInfo('邀请邻居', `<p>分享专属邀请码，邀请 3 栋邻居加入。</p>
+        <label class="field">专属邀请码<input class="invite-code" readonly value="${inviteCode}"></label>
+        <button class="primary" data-action="copy-invite">复制邀请码</button><p data-copy-status role="status"></p>`);
+      break;
+    case 'copy-invite':
+      (async () => {
+        const input = dialog.querySelector('.invite-code');
+        const status = dialog.querySelector('[data-copy-status]');
+        try {
+          await navigator.clipboard.writeText(inviteCode);
+          status.textContent = '邀请码已复制';
+        } catch {
+          input.select();
+          status.textContent = '邀请码已选中，可手动复制';
+        }
+      })();
+      break;
+    case 'leader':
+      openInfo('申请成为本栋楼长', '<p>为 3 栋邀请邻居、收集团购需求，并协助同步自提安排。</p><button class="primary leader-submit" data-action="submit-leader">提交演示申请</button>');
+      break;
+    case 'submit-leader':
+      state.leaderApplied = true;
+      dialog.close();
+      render();
+      notify('楼长申请已登记', save());
+      break;
+    case 'reorder': reorder(id); break;
     case 'bag': showBag(); break;
     case 'quality':
       openInfo('本小区品质公约', `<ul class="agreement">

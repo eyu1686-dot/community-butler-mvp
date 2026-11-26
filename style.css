@@ -156,3 +156,29 @@ body.has-checkout{padding-bottom:calc(163px + env(safe-area-inset-bottom))}
 .wish-vote{border:1px solid var(--line);border-radius:25px;min-height:44px;min-width:48px;flex:none}
 .wish-vote[aria-pressed=true]{background:var(--mint);color:var(--green);font-weight:800}
 .private-messages{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
+
+/* Resident center and operating dashboard */
+.community-head,.resident-head,.order-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:7px 10px;border:1px solid #b5c9b7;border-radius:12px;background:#f3f7ef;color:var(--green);font-size:14px;font-weight:750}
+.dashboard-toggle{white-space:nowrap;background:transparent}
+.dashboard-toggle[aria-pressed=true]{background:var(--green);color:#fff}
+.resident-head p{font-size:13px}.resident-head h2{margin-bottom:2px}
+.resident-stats,.dashboard-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 0}
+.resident-stats>div,.dashboard-metrics>div{background:var(--mint);border-radius:12px;padding:10px}
+.resident-stats dd,.dashboard-metrics dd{margin:2px 0 0;color:var(--green);font-size:22px;font-weight:800}
+.resident-stats dt,.dashboard-metrics dt{font-size:14px}
+.dashboard-metrics small{color:var(--muted);font-size:12px}
+.invite-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.invite-card .progress-label{margin-bottom:6px}
+.invite-code{width:100%;padding:9px;border:1px solid var(--line);border-radius:9px}
+.pickup-code{display:grid;justify-items:center;gap:6px;text-align:center}
+.pickup-code img{width:min(100%,220px);height:auto}.pickup-code strong{letter-spacing:.1em}
+.leader-submit{margin-top:10px}
+.order-actions .secondary{flex:none}
+.community-order .muted{font-size:14px}
+.reach-chart{display:grid;gap:8px;margin-top:12px}
+.reach-row{display:grid;grid-template-columns:38px minmax(0,1fr) 42px;gap:7px;align-items:center;font-size:14px}
+.reach-row strong{text-align:right;color:var(--green)}
+.reach-track{height:12px;background:var(--mint);border-radius:12px;overflow:hidden}
+.reach-track span{display:block;height:100%;background:#26744f;border-radius:12px}
+.model ol{padding-left:20px;margin:0}.model li+li{margin-top:9px}.model li p{font-size:14px;color:var(--muted)}
