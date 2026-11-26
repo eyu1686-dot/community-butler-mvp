@@ -130,3 +130,29 @@ body.has-checkout{padding-bottom:calc(163px + env(safe-area-inset-bottom))}
 .service-order + :is(.row,.service-order),.row + .service-order{border-top:1px solid var(--line)}
 .service-order .status{justify-self:start;white-space:normal}
 @media(min-width:520px){.service-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
+
+/* After-sales and community wishes */
+.service-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:13px}
+.service-metrics>div{display:grid;align-content:start;gap:3px;border-radius:13px;padding:8px;background:#fffdf8}
+.service-metrics strong{font-size:clamp(19px,5vw,25px)}
+.service-metrics span,.after-head small{font-size:12px}
+.after-head small{display:block;margin-top:7px;color:var(--muted)}
+.claim-heading,.claim-order,.wish-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.claim-heading h2{margin:0}
+.claim-order{padding:12px 0;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.claim-order:last-child{border-bottom:0;padding-bottom:0}
+.claim-order .primary{padding-inline:9px;font-size:14px}
+.claim-order .muted{font-size:13px}
+.claim-result{width:100%;padding:10px;border-radius:11px;background:var(--mint);color:var(--green);font-weight:750}
+.photo-actions .icon-button{padding:0 10px;margin-bottom:9px}
+.photo-actions input{max-width:100%}
+.claim-photo{display:block;width:100%;height:140px;object-fit:cover;border-radius:12px}
+.claim-review{display:grid;justify-items:center;gap:12px;padding:24px 4px}
+.review-spinner{width:44px;height:44px;border:4px solid var(--mint);border-top-color:var(--green);border-radius:50%;animation:review-spin .6s linear infinite}
+@keyframes review-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.review-spinner{animation:none}}
+.wish-heading{margin:14px 0 5px;font-size:16px}
+.wish-row{border-top:1px solid var(--line);padding:5px 0;overflow-wrap:anywhere}
+.wish-vote{border:1px solid var(--line);border-radius:25px;min-height:44px;min-width:48px;flex:none}
+.wish-vote[aria-pressed=true]{background:var(--mint);color:var(--green);font-weight:800}
+.private-messages{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}

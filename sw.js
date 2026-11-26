@@ -1,11 +1,11 @@
-const cacheName = 'community-butler-v3';
+const cacheName = 'community-butler-v4';
 const prefix = 'community-butler-';
 const localFiles = [
   './', './index.html', './style.css', './app.js', './manifest.json',
   './assets/icon-180.png', './assets/icon-192.png', './assets/icon-512.png',
   './assets/market.jpg', './assets/strawberries.jpg', './assets/tomatoes.jpg',
   './assets/greens.jpg', './assets/bread.jpg',
-  './assets/sorting.jpg', './assets/shrimp.jpg', './assets/cherries.jpg', './assets/fish.jpg',
+  './assets/berry-damage.jpg', './assets/sorting.jpg', './assets/shrimp.jpg', './assets/cherries.jpg', './assets/fish.jpg',
 ];
 const urls = new Set(localFiles.map(path => new URL(path, self.registration.scope).href));
 

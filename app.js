@@ -18,13 +18,20 @@ const products = [
 ];
 const tabs = ['fresh', 'select', 'service', 'community'];
 const storageKey = 'community-butler-demo-v1';
-const defaults = { cart:{}, orders:[], requests:[] };
+const demoOrder = {
+  id:'YG-DEMO-BERRY', demo:true, total:5900, time:'历史订单 · 演示',
+  items:[{ id:'dandong', name:'丹东红颜草莓', price:5900, quantity:1 }],
+  deliveryLabel:'北门管家自提点',
+};
+const defaults = { cart:{}, orders:[], requests:[], wishes:[], messages:[] };
 let state;
 try {
   state = { ...defaults, ...JSON.parse(localStorage.getItem(storageKey)) };
 } catch {
   state = defaults;
 }
+
+if (!state.orders.some(order => order.id === demoOrder.id)) state.orders.push({ ...demoOrder });
 
 const main = document.querySelector('#main');
 const dialog = document.querySelector('#dialog');
@@ -284,24 +291,138 @@ function orderDetails(order) {
       <p class="muted">${escapeHtml(address)} · ${escapeHtml(slot)}</p>
       ${notes ? `<p class="muted">备注：${escapeHtml(notes)}</p>` : ''}
       <p class="muted">${escapeHtml(order.id)} · ${servicePrice(order.total)} ${escapeHtml(unit)} · ${escapeHtml(order.time)}</p>
-      <span class="status">${escapeHtml(order.status)}</span>
+      <span class="status">${escapeHtml(claimStatus(order) || order.status)}</span>
     </div>`;
   }
-  return `<div class="row"><div><strong>${order.id} · ${money(order.total)}</strong><p class="muted">${order.items.map(item => `${item.name} × ${item.quantity}`).join('、')}</p><small>${order.time} · ${escapeHtml(order.deliveryLabel || deliveryOptions.pickup.label)}</small></div><span class="status">${deliveryOptions[order.delivery]?.status || '待自提'}</span></div>`;
+  return `<div class="row"><div><strong>${order.id} · ${money(order.total)}</strong><p class="muted">${order.items.map(item => `${item.name} × ${item.quantity}`).join('、')}</p><small>${order.time} · ${escapeHtml(order.deliveryLabel || deliveryOptions.pickup.label)}</small></div><span class="status">${claimStatus(order) || (order.demo ? '已完成' : deliveryOptions[order.delivery]?.status || '待自提')}</span></div>`;
+}
+
+const issueTypes = ['坏果/磕碰','分量不足','服务不满意'];
+const demoDamage = './assets/berry-damage.jpg';
+let claimTimer;
+let claimPhotoUrl;
+
+function claimStatus(order) {
+  if (!order.claim) return '';
+  if (order.claim.reviewUntil) return '管家审核中';
+  return order.claim.method === 'refund' ? '售后已退款' : '已安排随单补发';
+}
+
+function claimResult(claim) {
+  return claim.method === 'refund'
+    ? `已自动通过！赔付款 ¥${claim.amount / 100} 已退回账户，无需退回商品`
+    : '已自动通过！下次随单免费补发，无需退回商品';
 }
 
 function servicePage() {
-  const orderOptions = state.orders.map(order => `<option value="${order.id}">${order.id} · ${money(order.total)}</option>`).join('');
-  const requests = state.requests.map(request => `<div class="row"><div><strong>${escapeHtml(request.type)}</strong><p class="muted">${escapeHtml(request.detail)}</p><small>${escapeHtml(request.order || '未关联订单')} · ${escapeHtml(request.time)}</small></div><span class="status">已登记</span></div>`).join('');
-  return pageHead('管家售后', '遇到商品、自提或社区服务问题，可以在这里登记。') + `
-    <form id="request-form" class="panel">
-      <h2>提交售后申请</h2>
-      <label class="field">关联订单<select name="order"><option value="">未关联订单</option>${orderOptions}</select></label>
-      <label class="field">问题类型<select name="type"><option>商品品质</option><option>漏发或错发</option><option>自提问题</option><option>社区服务</option><option>其他</option></select></label>
-      <label class="field">问题说明<textarea name="detail" rows="3" maxlength="240" required placeholder="请简单描述遇到的问题"></textarea></label>
-      <button class="primary" type="submit">提交演示申请</button>
+  const orders = state.orders.map(order => {
+    const names = order.items.map(item => escapeHtml(item.name)).join('、');
+    const result = order.claim && !order.claim.reviewUntil ? claimResult(order.claim) : '';
+    return `<article class="claim-order">
+      <div><strong>${names}</strong><p class="muted">${escapeHtml(order.id)}${order.demo ? ' · 演示历史订单' : ''} · ${money(order.total)}</p></div>
+      ${order.claim ? `<span class="status">${claimStatus(order)}</span>` : `<button class="primary" data-action="claim" data-id="${escapeHtml(order.id)}" aria-label="申请售后赔付 · ${names}">申请售后赔付</button>`}
+      ${result ? `<p class="claim-result">${result}</p>` : ''}
+    </article>`;
+  }).join('');
+  const oldRequests = state.requests.map(request => `<li>${escapeHtml(request.type)} · ${escapeHtml(request.detail)}</li>`).join('');
+  return `<header class="page-head after-head">
+    <h1>管家售后</h1><p>阳光花园一期 · 本月服务承诺</p>
+    <div class="service-metrics">
+      <div><strong>100%</strong><span>售后秒赔率</span></div>
+      <div><strong>3 分钟</strong><span>平均响应时间</span></div>
+      <div><strong>1 家</strong><span>合作服务商淘汰公示</span></div>
+    </div>
+    <small>演示指标</small>
+  </header>
+  <section class="panel"><div class="claim-heading"><h2>一键拍照秒赔</h2><span class="status">免退回</span></div>
+    <p class="muted">选择订单、补充照片，查看模拟审核和赔付结果。</p>
+    ${orders}
+    ${oldRequests ? `<details class="panel"><summary>历史售后登记</summary><ul>${oldRequests}</ul></details>` : ''}
+  </section>
+  <section class="panel"><h2>一对一专属管家留言 / 需求许愿池</h2>
+    <form id="wish-form">
+      <label class="field">留言去向<select name="audience"><option value="wish">发布到小区许愿池</option><option value="private">仅留言给专属管家</option></select></label>
+      <label class="field">想告诉管家什么？<textarea name="wish" required maxlength="160" rows="2" placeholder="明天想团购什么水果/海鲜？"></textarea></label>
+      <button class="primary" type="submit">提交留言</button>
     </form>
-    <section class="panel"><h2>申请记录</h2>${requests || '<p class="muted">暂无售后申请</p>'}</section>`;
+    <h3 class="wish-heading">邻里许愿列表</h3><p class="muted">留言与投票仅保存在当前浏览器。</p>
+    <div id="wish-list">${state.wishes.map(wish => `<article class="wish-row">
+      <p>${escapeHtml(wish.text)}</p>
+      <button class="wish-vote" data-action="vote" data-id="${escapeHtml(wish.id)}" aria-pressed="${Boolean(wish.voted)}" aria-label="点赞：${escapeHtml(wish.text)}">♥ ${Number(wish.voted || 0)}</button>
+    </article>`).join('') || '<p class="muted">还没有公开许愿。</p>'}</div>
+    ${state.messages.length ? `<details class="private-messages"><summary>我的管家留言</summary>${state.messages.map(message => `<p>${escapeHtml(message)}</p>`).join('')}</details>` : ''}
+  </section>`;
+}
+
+function clearClaimPhoto() {
+  if (claimPhotoUrl) URL.revokeObjectURL(claimPhotoUrl);
+  claimPhotoUrl = undefined;
+}
+
+function showClaim(id) {
+  const order = state.orders.find(item => item.id === id);
+  if (!order || order.claim) return;
+  clearClaimPhoto();
+  openInfo('申请售后赔付', `<form id="claim-form">
+    <p class="muted">${order.items.map(item => escapeHtml(item.name)).join('、')} · ${escapeHtml(order.id)}</p>
+    <input type="hidden" name="order" value="${escapeHtml(order.id)}">
+    <label class="field">问题类型<select name="issue" required><option value="">选择问题类型</option>${bookingOptions(issueTypes)}</select></label>
+    <div class="photo-actions">
+      <label class="field">选择本地照片<input type="file" name="photo" accept="image/*"></label>
+      <button type="button" class="icon-button" data-action="demo-photo">填入演示破损图</button>
+    </div>
+    <img class="claim-photo" alt="所选售后照片预览" hidden>
+    <p data-photo-status class="muted" role="status"></p>
+    <fieldset class="delivery"><legend>期望处理方式</legend>
+      <label class="delivery-option"><input type="radio" name="method" value="refund" required>按比例秒退金额</label>
+      <label class="delivery-option"><input type="radio" name="method" value="replacement" required>下次随单免费补发</label>
+    </fieldset>
+    <button class="primary service-book" type="submit">提交售后申请</button>
+    <small class="muted">赔付为演示，照片仅在本机预览。</small>
+  </form>`);
+}
+
+function displayClaimPhoto(source, label) {
+  const form = dialog.querySelector('#claim-form');
+  const photo = form.querySelector('.claim-photo');
+  photo.src = source;
+  photo.hidden = false;
+  form.querySelector('[data-photo-status]').textContent = label;
+}
+
+function completeReviews() {
+  clearTimeout(claimTimer);
+  const now = Date.now();
+  const pending = state.orders.filter(order => order.claim?.reviewUntil);
+  const completed = pending.filter(order => order.claim.reviewUntil <= now);
+  for (const order of completed) delete order.claim.reviewUntil;
+  if (completed.length) {
+    const saved = save();
+    if (['#service','#community'].includes(location.hash)) render();
+    const active = completed.find(order => order.id === dialog.querySelector('[data-review]')?.dataset.review);
+    if (active && dialog.open) openInfo('售后审核结果', `<p class="claim-result">${claimResult(active.claim)}</p><p class="muted">演示赔付 · 订单状态已更新</p>`);
+    else if (location.hash === '#service') notify('售后审核已通过', saved);
+  }
+  const next = pending.filter(order => order.claim.reviewUntil).map(order => order.claim.reviewUntil);
+  if (next.length) claimTimer = setTimeout(completeReviews, Math.max(0, Math.min(...next) - now));
+}
+
+function submitClaim(form) {
+  const { order:id, issue, method } = Object.fromEntries(new FormData(form));
+  const order = state.orders.find(item => item.id === id);
+  if (!order || order.claim || !issueTypes.includes(issue) || !['refund','replacement'].includes(method)) return;
+  if (form.querySelector('.claim-photo').hidden) {
+    form.querySelector('[data-photo-status]').textContent = '请选择本地照片或填入演示破损图。';
+    return;
+  }
+  const refund = order.demo ? 1280 : Math.round(order.total * 0.2);
+  order.claim = { issue, method, amount:method === 'refund' ? refund : 0, reviewUntil:Date.now() + 1500 };
+  save();
+  clearClaimPhoto();
+  render();
+  openInfo('管家极速审核', `<div class="claim-review" data-review="${escapeHtml(id)}" role="status">
+    <span class="review-spinner" aria-hidden="true"></span><p>正在核对订单与照片…</p></div>`);
+  completeReviews();
 }
 
 function communityPage() {
@@ -423,6 +544,11 @@ function showOrders(message, saved) {
 
 dialog.addEventListener('submit', event => {
   const form = event.target;
+  if (form.id === 'claim-form') {
+    event.preventDefault();
+    submitClaim(form);
+    return;
+  }
   if (form.id !== 'booking-form') return;
   event.preventDefault();
   const item = neighborhoodServices.find(service => service.id === form.dataset.service);
@@ -446,8 +572,24 @@ dialog.addEventListener('submit', event => {
   showOrders('预约成功', saved);
 });
 
-dialog.addEventListener('close', stopPreview);
+dialog.addEventListener('close', () => {
+  stopPreview();
+  clearClaimPhoto();
+});
 dialog.addEventListener('change', event => {
+  if (event.target.name === 'photo' && event.target.form?.id === 'claim-form') {
+    const file = event.target.files[0];
+    if (!file) return;
+    clearClaimPhoto();
+    if (file.type && !file.type.startsWith('image/')) {
+      event.target.form.querySelector('.claim-photo').hidden = true;
+      event.target.form.querySelector('[data-photo-status]').textContent = '请选择图片文件。';
+      return;
+    }
+    claimPhotoUrl = URL.createObjectURL(file);
+    displayClaimPhoto(claimPhotoUrl, '已选择本地照片');
+    return;
+  }
   if (event.target.name !== 'delivery') return;
   delivery = event.target.value;
   const fee = deliveryOptions[delivery].fee;
@@ -468,6 +610,21 @@ document.addEventListener('click', event => {
       }
       break;
     case 'book-service': showBooking(id); break;
+    case 'claim': showClaim(id); break;
+    case 'demo-photo':
+      clearClaimPhoto();
+      dialog.querySelector('[name="photo"]').value = '';
+      displayClaimPhoto(demoDamage, '已填入演示破损图');
+      break;
+    case 'vote': {
+      const wish = state.wishes.find(item => item.id === id);
+      if (!wish) break;
+      wish.voted = !wish.voted;
+      save();
+      button.setAttribute('aria-pressed', String(wish.voted));
+      button.textContent = `♥ ${Number(wish.voted)}`;
+      break;
+    }
     case 'bag': showBag(); break;
     case 'quality':
       openInfo('本小区品质公约', `<ul class="agreement">
@@ -504,29 +661,32 @@ document.addEventListener('click', event => {
 });
 
 main.addEventListener('submit', event => {
-  if (event.target.id !== 'request-form') return;
+  if (event.target.id !== 'wish-form') return;
   event.preventDefault();
   const form = event.target;
-  const description = form.elements.detail;
-  const detail = description.value.trim();
-  if (!detail) {
-    description.setCustomValidity('请输入问题说明');
-    description.reportValidity();
+  const { audience, wish } = form.elements;
+  const text = wish.value.trim();
+  if (!text) {
+    wish.setCustomValidity('请输入留言内容');
+    wish.reportValidity();
     return;
   }
-  state.requests.unshift({ order:form.elements.order.value, type:form.elements.type.value, detail, time:timestamp() });
+  if (audience.value === 'private') state.messages.unshift(text);
+  else state.wishes.unshift({ id:Date.now().toString(36), text, voted:false });
   const saved = save();
   render();
-  notify('售后申请已登记', saved);
+  main.querySelector('#wish-form textarea').focus({ preventScroll:true });
+  notify(audience.value === 'private' ? '专属管家留言已保存' : '许愿已发布', saved);
 });
 main.addEventListener('input', event => {
-  if (event.target.name === 'detail') event.target.setCustomValidity('');
+  if (event.target.name === 'wish') event.target.setCustomValidity('');
 });
 window.addEventListener('hashchange', () => {
   render();
   window.scrollTo(0, 0);
 });
 render();
+completeReviews();
 setInterval(() => {
   const previousDay = state.batch.day;
   syncBatch();
