@@ -101,3 +101,32 @@ body.has-checkout{padding-bottom:calc(163px + env(safe-area-inset-bottom))}
 .preview-actions{display:flex;gap:8px;margin-top:12px}.preview-actions .icon-button{padding:0 10px}
 @media(max-width:359px){.quality-badge{font-size:12px;padding-inline:6px}.brand span{font-size:12px}.group-summary img{width:82px}.group-summary h3{font-size:16px}}
 @media(prefers-reduced-motion:reduce){progress::-webkit-progress-value{transition:none}}
+
+/* Neighborhood services */
+.select-hero{background:linear-gradient(115deg,#e8f1e5,#f3f4df);margin-bottom:12px}
+.service-filters{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.service-filter{border:1px solid var(--line);border-radius:24px;background:#fff;min-height:44px;padding:5px 10px;font-weight:700;font-size:14px}
+.service-filter[aria-pressed=true]{background:var(--green);color:#fff;border-color:var(--green)}
+.service-promise{background:#ffedcc;color:#593813;border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:14px;font-weight:750}
+.service-promise small{display:block;color:#705737;font-size:12px;font-weight:500}
+.service-grid{display:grid;gap:10px}
+.service-card{padding:13px;border:1px solid var(--line);border-radius:17px;background:#fff;display:grid;gap:8px}
+.service-card-head{display:flex;align-items:center;gap:10px}
+.service-card h2{font-size:17px}
+.service-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:var(--mint);color:var(--green)}
+.service-icon svg{width:22px;height:22px}
+.service-price strong,.booking-item span{color:#984009;font-weight:800}
+.service-price strong{font-size:21px}
+.service-price small,.service-scope{color:var(--muted);font-size:14px}
+.service-book{width:100%}
+.endorsement{border-radius:11px;background:var(--mint);padding:0 10px;color:var(--green)}
+.endorsement summary{padding:10px 0;min-height:44px;cursor:pointer;font-size:14px;font-weight:800}
+.endorsement-body{padding:0 0 10px;font-size:14px}
+.endorsement-body p+p{margin-top:4px}
+.booking-address{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.booking-address .field{margin-bottom:0}
+.booking-item{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px}
+.service-order{padding:11px 0;display:grid;gap:5px;overflow-wrap:anywhere}
+.service-order + :is(.row,.service-order),.row + .service-order{border-top:1px solid var(--line)}
+.service-order .status{justify-self:start;white-space:normal}
+@media(min-width:520px){.service-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}

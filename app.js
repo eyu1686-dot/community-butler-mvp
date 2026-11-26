@@ -107,19 +107,6 @@ function drawIcons() {
   window.lucide?.createIcons();
 }
 
-function cards(items) {
-  return `<div class="products">${items.map(item => `
-    <article class="product">
-      <img src="./assets/${item.photo}.jpg" alt="" width="480" height="320">
-      <div class="product-copy">
-        <h3>${item.name}</h3><p>${item.detail}</p>
-        <div class="product-foot"><span class="price">${money(item.price)}</span>
-          <button class="add" data-action="add" data-id="${item.id}" aria-label="加购${item.name}"><span>+</span></button>
-        </div>
-      </div>
-    </article>`).join('')}</div>`;
-}
-
 function freshPage() {
   return `<section class="hero market-hero">
     <img src="./assets/market.jpg" alt="" fetchpriority="high" width="724" height="724">
@@ -205,20 +192,112 @@ function playPreview() {
 
 const pageHead = (title, description) => `<header class="page-head"><h1>${title}</h1><p>${description}</p></header>`;
 
+const serviceCategories = {
+  errands:'最后100米跑腿',
+  repairs:'一口价维修',
+  cleaning:'严选保洁',
+};
+const neighborhoodServices = [
+  { id:'parcel', category:'errands', name:'代取驿站快递', icon:'package', price:200, unit:'/ 单', scope:'凭取件码代取，送到楼栋门口。' },
+  { id:'trash', category:'errands', name:'代扔大件垃圾', icon:'trash-2', price:200, unit:'/ 单', scope:'协助搬至小区指定的大件垃圾投放点。' },
+  { id:'takeout', category:'errands', name:'外卖门岗代提上楼', icon:'shopping-bag', price:150, unit:'/ 单', scope:'从门岗代提外卖，送至门牌。' },
+  { id:'tools', category:'errands', name:'邻里借工具/急事跑腿', icon:'hammer', price:300, unit:'起', scope:'工具借用或小区内紧急代办，超出起步价需先确认。' },
+  { id:'drain', category:'repairs', name:'疏通下水/马桶', icon:'wrench', price:6000, unit:'一口价', scope:'含一次常规疏通和排水检查。', worker:'周师傅', years:12, households:38 },
+  { id:'faucet', category:'repairs', name:'更换水龙头/软管', icon:'droplets', price:3000, unit:'工时费', scope:'含拆装与试水，水龙头或软管由住户提供。', worker:'陈师傅', years:9, households:26 },
+  { id:'housekeeping', category:'cleaning', name:'三居室深度日常保洁', icon:'sparkles', price:3500, unit:'/ 小时', scope:'按小时计费，预约以 1 小时为起订，延时须先确认。', worker:'李师傅', years:8, households:54 },
+  { id:'hood', category:'cleaning', name:'油烟机高温拆洗', icon:'fan', price:11800, unit:'一口价', scope:'含高温去油、滤网拆洗与复装试机。', worker:'王师傅', years:11, households:31 },
+];
+const buildings = ['1 栋','2 栋','3 栋','5 栋','6 栋'];
+const rooms = ['101','102','201','202','301','302','401','402','501','502','601','602'];
+const visitWindows = ['09:00–11:00','11:00–13:00','14:00–16:00','16:00–18:00','18:00–20:00'];
+const matchingStatus = '管家已接单 · 正在匹配本小区人员';
+let serviceCategory = 'errands';
+
+const servicePrice = cents => '¥' + (cents / 100).toString();
+
+function endorsement(item) {
+  return `<details class="endorsement">
+    <summary>管家实测背书</summary>
+    <div class="endorsement-body">
+      <p><strong>${item.worker}</strong> · 从业 ${item.years} 年</p>
+      <p>本小区已服务 <strong>${item.households} 户</strong></p>
+      <p><strong>零隐形消费</strong> · 服务范围和明细事先确认。</p>
+      <p><strong>平台资金担保</strong> · 验收满意再结算给师傅。</p>
+    </div>
+  </details>`;
+}
+
 function selectPage() {
-  return pageHead('邻里严选', '阳光花园一期附近的手作好物，和生鲜一起自提。') +
-    '<div class="section-head"><h2>本周推荐</h2></div>' +
-    cards(products.filter(item => item.category === '邻里严选'));
+  const errands = serviceCategory === 'errands';
+  const items = neighborhoodServices.filter(item => item.category === serviceCategory);
+  return `<header class="page-head select-hero">
+    <h1>邻里严选</h1><p>阳光花园一期 · 本小区实测背书服务</p>
+  </header>
+  <div class="service-filters" role="group" aria-label="服务分类">
+    ${Object.entries(serviceCategories).map(([id, label]) => `<button class="service-filter" data-action="service-category" data-id="${id}" aria-pressed="${id === serviceCategory}">${label}</button>`).join('')}
+  </div>
+  <p class="service-promise">${errands
+    ? '执行员均为本小区实名宝妈/退休邻居 · 平均12分钟送达'
+    : '公开服务范围与价格 · 验收满意再结算'}<small>人员与服务记录为演示数据</small></p>
+  <section class="service-grid" aria-label="${serviceCategories[serviceCategory]}">
+    ${items.map(item => `<article class="service-card">
+      <div class="service-card-head"><span class="service-icon" aria-hidden="true">${icon(item.icon)}</span>
+        <div><h2>${item.name}</h2><p class="service-price"><strong>${servicePrice(item.price)}</strong> <small>${item.unit}</small></p></div>
+      </div>
+      <p class="service-scope">${item.scope}</p>
+      ${errands ? '' : endorsement(item)}
+      <button class="primary service-book" data-action="book-service" data-id="${item.id}" aria-label="${errands ? '一键下单' : '预约上门'} · ${item.name}">${errands ? '一键下单' : '预约上门'}</button>
+    </article>`).join('')}
+  </section>`;
+}
+
+function availableWindows(item) {
+  const tomorrow = new Date(Date.now() + chinaOffset + 86400000).toISOString().slice(0, 10);
+  const windows = visitWindows.map(window => `${tomorrow} ${window}`);
+  return item.category === 'errands' ? ['尽快送达', ...windows] : windows;
+}
+
+function bookingOptions(values) {
+  return values.map(value => `<option>${value}</option>`).join('');
+}
+
+function showBooking(id) {
+  const item = neighborhoodServices.find(service => service.id === id);
+  if (!item) return;
+  openInfo('预约下单', `<p class="booking-item"><strong>${item.name}</strong> <span>${servicePrice(item.price)} ${item.unit}</span></p>
+    <form id="booking-form" data-service="${item.id}">
+      <div class="booking-address">
+        <label class="field">楼栋<select name="building" required><option value="">选择楼栋</option>${bookingOptions(buildings)}</select></label>
+        <label class="field">门牌号<select name="room" required><option value="">选择门牌号</option>${bookingOptions(rooms)}</select></label>
+      </div>
+      <label class="field">期望上门时间段<select name="slot" required><option value="">选择时间段</option>${bookingOptions(availableWindows(item))}</select></label>
+      <label class="field">备注说明（选填）<textarea name="notes" rows="3" maxlength="200" placeholder="可填写服务内容或上门说明"></textarea></label>
+      <button class="primary service-book" type="submit">提交演示预约</button>
+    </form>`);
+}
+
+function orderDetails(order) {
+  if (order.kind === 'service') {
+    const { address, slot, notes, unit } = order.booking;
+    return `<div class="service-order">
+      <strong>${escapeHtml(order.items[0].name)}</strong>
+      <p class="muted">${escapeHtml(address)} · ${escapeHtml(slot)}</p>
+      ${notes ? `<p class="muted">备注：${escapeHtml(notes)}</p>` : ''}
+      <p class="muted">${escapeHtml(order.id)} · ${servicePrice(order.total)} ${escapeHtml(unit)} · ${escapeHtml(order.time)}</p>
+      <span class="status">${escapeHtml(order.status)}</span>
+    </div>`;
+  }
+  return `<div class="row"><div><strong>${order.id} · ${money(order.total)}</strong><p class="muted">${order.items.map(item => `${item.name} × ${item.quantity}`).join('、')}</p><small>${order.time} · ${escapeHtml(order.deliveryLabel || deliveryOptions.pickup.label)}</small></div><span class="status">${deliveryOptions[order.delivery]?.status || '待自提'}</span></div>`;
 }
 
 function servicePage() {
   const orderOptions = state.orders.map(order => `<option value="${order.id}">${order.id} · ${money(order.total)}</option>`).join('');
   const requests = state.requests.map(request => `<div class="row"><div><strong>${escapeHtml(request.type)}</strong><p class="muted">${escapeHtml(request.detail)}</p><small>${escapeHtml(request.order || '未关联订单')} · ${escapeHtml(request.time)}</small></div><span class="status">已登记</span></div>`).join('');
-  return pageHead('管家售后', '遇到商品或自提问题，可以在这里登记。') + `
+  return pageHead('管家售后', '遇到商品、自提或社区服务问题，可以在这里登记。') + `
     <form id="request-form" class="panel">
       <h2>提交售后申请</h2>
       <label class="field">关联订单<select name="order"><option value="">未关联订单</option>${orderOptions}</select></label>
-      <label class="field">问题类型<select name="type"><option>商品品质</option><option>漏发或错发</option><option>自提问题</option><option>其他</option></select></label>
+      <label class="field">问题类型<select name="type"><option>商品品质</option><option>漏发或错发</option><option>自提问题</option><option>社区服务</option><option>其他</option></select></label>
       <label class="field">问题说明<textarea name="detail" rows="3" maxlength="240" required placeholder="请简单描述遇到的问题"></textarea></label>
       <button class="primary" type="submit">提交演示申请</button>
     </form>
@@ -226,7 +305,7 @@ function servicePage() {
 }
 
 function communityPage() {
-  const orders = state.orders.map(order => `<div class="row"><div><strong>${order.id} · ${money(order.total)}</strong><p class="muted">${order.items.map(item => `${item.name} × ${item.quantity}`).join('、')}</p><small>${order.time} · ${escapeHtml(order.deliveryLabel || deliveryOptions.pickup.label)}</small></div><span class="status">${deliveryOptions[order.delivery]?.status || '待自提'}</span></div>`).join('');
+  const orders = state.orders.map(orderDetails).join('');
   return pageHead('我的小区', '阳光花园一期 · 单小区服务演示') + `
     <section class="panel"><h2>北门管家自提点</h2><p>阳光花园一期小区北门内侧</p><p class="muted">自提时间 17:00–20:00</p></section>
     <section class="panel"><h2 id="orders-title" tabindex="-1">我的订单</h2>${orders || '<p class="muted">暂无订单</p>'}</section>
@@ -332,11 +411,40 @@ function checkout() {
   const saved = save();
   dialog.close();
   delivery = 'pickup';
-  history.pushState(null, '', '#community');
+  showOrders('下单成功', saved);
+}
+
+function showOrders(message, saved) {
+  if (location.hash !== '#community') history.pushState(null, '', '#community');
   render();
   document.querySelector('#orders-title').focus();
-  notify('下单成功', saved);
+  notify(message, saved);
 }
+
+dialog.addEventListener('submit', event => {
+  const form = event.target;
+  if (form.id !== 'booking-form') return;
+  event.preventDefault();
+  const item = neighborhoodServices.find(service => service.id === form.dataset.service);
+  if (!item) return;
+  const { building, room, slot, notes } = Object.fromEntries(new FormData(form));
+  if (!buildings.includes(building) || !rooms.includes(room)) return;
+  if (!availableWindows(item).includes(slot)) {
+    const select = form.elements.slot;
+    select.innerHTML = '<option value="">日期已更新，请重新选择</option>' + bookingOptions(availableWindows(item));
+    select.reportValidity();
+    return;
+  }
+  state.orders.unshift({
+    id:'NB-' + Date.now().toString(36).toUpperCase(),
+    kind:'service', status:matchingStatus, time:timestamp(), total:item.price,
+    items:[{ id:item.id, name:item.name, price:item.price, quantity:1 }],
+    booking:{ address:`${building} ${room} 室`, slot, notes:notes.trim().slice(0, 200), unit:item.unit },
+  });
+  const saved = save();
+  dialog.close();
+  showOrders('预约成功', saved);
+});
 
 dialog.addEventListener('close', stopPreview);
 dialog.addEventListener('change', event => {
@@ -352,6 +460,14 @@ document.addEventListener('click', event => {
   if (!button) return;
   const { action, id } = button.dataset;
   switch (action) {
+    case 'service-category':
+      if (serviceCategory !== id && Object.hasOwn(serviceCategories, id)) {
+        serviceCategory = id;
+        render();
+        main.querySelector('.service-filter[aria-pressed="true"]').focus({ preventScroll:true });
+      }
+      break;
+    case 'book-service': showBooking(id); break;
     case 'bag': showBag(); break;
     case 'quality':
       openInfo('本小区品质公约', `<ul class="agreement">
