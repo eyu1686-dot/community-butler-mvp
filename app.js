@@ -1,16 +1,16 @@
 const direct = [
   { id:'dandong', name:'丹东红颜草莓', detail:'500 g / 盒', photo:'strawberries', base:42, tiers:[6800,5900,4900], category:'fruit',
-    quality:['当季头茬','逐盒挑拣'], origin:'辽宁丹东 · 鲜果合作庄园 A06', storage:'冷藏 0–4°C，食用前再洗，建议 2 日内吃完。', review:'3栋李姐：草莓颗颗饱满，孩子一次吃半盒。' },
+    quality:['当季头茬','逐盒挑拣'], origin:'辽宁丹东', storage:'冷藏 0–4°C，食用前再洗，建议 2 日内吃完。', review:'3栋李姐：草莓颗颗饱满，孩子一次吃半盒。' },
   { id:'tiger', name:'现捞冰鲜黑虎虾', detail:'400 g / 份', photo:'shrimp', base:29, tiers:[7900,6900,5900], category:'seafood',
-    quality:['足斤足两去冰重','全程冰鲜'], origin:'广东湛江 · 港口直供合作点 B03', storage:'收货后冷藏，当天煮熟食用；不能当天吃可密封冷冻。', review:'6栋刘叔：复秤去冰重，回家一煮肉质很紧实。' },
+    quality:['足斤足两去冰重','全程冰鲜'], origin:'广东湛江', storage:'收货后冷藏，当天煮熟食用；不能当天吃可密封冷冻。', review:'6栋刘叔：复秤去冰重，回家一煮肉质很紧实。' },
   { id:'chile', name:'智利车厘子 3J', detail:'500 g / 盒', photo:'cherries', base:9, tiers:[8900,7900,6900], category:'fruit',
-    quality:['3J 大果规格','逐盒挑检'], origin:'智利中部产区 · 冷链进口合作点 A12', storage:'保持干燥冷藏，食用前冲洗。', review:'2栋张姐：果柄青绿，果肉脆甜。' },
+    quality:['3J 大果规格','逐盒挑检'], origin:'智利中部产区', storage:'保持干燥冷藏，食用前冲洗。', review:'2栋张姐：果柄青绿，果肉脆甜。' },
   { id:'hairtail', name:'舟山带鱼段', detail:'500 g / 份', photo:'fish', base:24, tiers:[3900,3500,2900], category:'seafood',
-    quality:['净重 500 g','分段净切'], origin:'浙江舟山 · 港口直供合作点 B07', storage:'密封冷藏，当天烧制；暂不食用请冷冻。', review:'5栋吴姨：鱼段切得整齐，红烧省了不少工。' },
+    quality:['净重 500 g','分段净切'], origin:'浙江舟山', storage:'密封冷藏，当天烧制；暂不食用请冷冻。', review:'5栋吴姨：鱼段切得整齐，红烧省了不少工。' },
   { id:'eggs', name:'农家散养土鸡蛋 30 枚', detail:'30 枚 / 盒', photo:'eggs', base:34, tiers:[4900,4500,3900], category:'pantry',
-    quality:['逐枚查裂','当天装盒'], origin:'安徽宣城 · 散养基地合作点 C02', storage:'原盒冷藏，生熟分开，充分加热后食用。', review:'1栋何姐：到手每颗都完整，正好够一家人吃几天。' },
+    quality:['逐枚查裂','当天装盒'], origin:'安徽宣城', storage:'原盒冷藏，生熟分开，充分加热后食用。', review:'1栋何姐：到手每颗都完整，正好够一家人吃几天。' },
   { id:'pumpkin', name:'贝贝南瓜', detail:'约 1 kg / 份', photo:'pumpkin', base:19, tiers:[2900,2400,1990], category:'vegetable',
-    quality:['粉糯小果','整果分装'], origin:'山东寿光 · 当季蔬菜合作庄园 D05', storage:'完整果放阴凉处，切开后密封冷藏并尽快食用。', review:'3栋周姐：蒸熟很粉糯，孩子用勺挖着吃。' },
+    quality:['粉糯小果','整果分装'], origin:'山东寿光', storage:'完整果放阴凉处，切开后密封冷藏并尽快食用。', review:'3栋周姐：蒸熟很粉糯，孩子用勺挖着吃。' },
 ];
 const freshCategories = { all:'全部臻选', fruit:'时令鲜果', seafood:'现捞海鲜', vegetable:'当季蔬菜', pantry:'粮油蛋奶' };
 const freshEditorial = {
@@ -21,13 +21,13 @@ const freshEditorial = {
   eggs:'PANTRY SELECTION · 安徽宣城',
   pumpkin:'GARDEN SELECTION · 山东寿光',
 };
-const allocationLabels = ['基础礼遇价 · 满 10 份','满 30 份尊享价','满 50 份庄园直供价'];
+const allocationLabels = ['基础礼遇价 · 满 10 份','满 30 份尊享价','满 50 份优选配额价'];
 let freshCategory = 'all';
 
-const marketScenes = [
-  { photo:'scene-check', title:'丹东核心庄园头茬采摘', time:'05:15', inspector:'李管家', detail:'按成熟度采摘，逐盒检查果实状态。' },
-  { photo:'scene-scale', title:'到货挑拣与复秤', time:'05:40', inspector:'周管家', detail:'挑出挤压或破损果，分装后复核净重。' },
-  { photo:'scene-ice', title:'恒温冷链专箱启运', time:'06:30', inspector:'陈管家', detail:'装载前复核箱温，按批次封签启运。' },
+const freshStandards = [
+  { photo:'cherries', label:'标准 01 · 优中选优', title:'只挑大果与头茬货', detail:'拒绝通货混装，按果径与鲜度精选头部 20% 货源' },
+  { photo:'sorting', label:'标准 02 · 人工二次精挑', title:'开箱逐颗剔除瑕疵果', detail:'到站后管家逐盒开箱复检，软磕、坏果直接筛除' },
+  { photo:'dandong-scale', label:'标准 03 · 足斤足两净重', title:'去皮净重不注水', detail:'电子秤去包装箱复秤，坏果缺重拍照极速秒赔' },
 ];
 
 function freshImage(photo, label, loading = 'lazy') {
@@ -40,25 +40,25 @@ function carouselMarkup(label, slides, options = {}) {
       ${slides.map((slide, index) => `<div class="carousel-slide" role="group" aria-label="第 ${index + 1} 张，共 ${slides.length} 张">${slide}</div>`).join('')}
     </div>
     <div class="carousel-controls">
-      ${options.arrows ? '<button class="secondary carousel-arrow" data-step="-1" aria-label="上一张直采场景">‹</button>' : ''}
+      ${options.arrows ? '<button class="secondary carousel-arrow" data-step="-1" aria-label="上一项精选标准">‹</button>' : ''}
       <div class="carousel-dots" role="group" aria-label="选择图片">
         ${slides.map((_, index) => `<button class="carousel-dot" data-slide="${index}" aria-label="第 ${index + 1} 张图片" aria-current="${index === 0}"><span></span></button>`).join('')}
       </div>
-      ${options.arrows ? '<button class="secondary carousel-arrow" data-step="1" aria-label="下一张直采场景">›</button>' : ''}
+      ${options.arrows ? '<button class="secondary carousel-arrow" data-step="1" aria-label="下一项精选标准">›</button>' : ''}
       <button class="carousel-toggle" data-carousel-toggle aria-label="暂停自动轮播">暂停</button>
     </div>
   </div>`;
 }
 
 function marketCarousel() {
-  const slides = marketScenes.map(scene => `<article class="market-slide">
+  const slides = freshStandards.map(scene => `<article class="market-slide">
     ${freshImage(scene.photo, scene.title, 'eager')}
-    <div class="market-caption"><p><time>${scene.time}</time><span>流程记录 · ${scene.inspector}</span></p>
+    <div class="market-caption"><p><span>${scene.label}</span></p>
       <h3>${scene.title}</h3><small>${scene.detail}</small></div>
   </article>`);
   return `<section class="market-carousel" aria-labelledby="market-title">
-    <div class="section-head"><div><h2 id="market-title">今日庄园与港口直供实录</h2><p>模拟溯源画面 · 左右滑动查看</p></div></div>
-    ${carouselMarkup('庄园与港口直供场景', slides, { trackClass:'market-track', arrows:true })}
+    <div class="section-head"><div><h2 id="market-title">今日品控与精选标准</h2><p>买手头茬选货 · 管家逐盒复检</p></div></div>
+    ${carouselMarkup('每日首批次严选品控实录', slides, { trackClass:'market-track', arrows:true })}
   </section>`;
 }
 
@@ -243,8 +243,6 @@ const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
   '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;',
 })[character]);
 let delivery = 'pickup';
-let previewFrame = 0;
-let previewTimer;
 const chinaOffset = 8 * 60 * 60 * 1000;
 function batchTime(now = Date.now()) {
   const local = new Date(now + chinaOffset);
@@ -456,16 +454,16 @@ function redeemGift(id) {
 function freshPage() {
   return `<section class="hero market-hero">
     <img src="./assets/estate-hero.jpg" alt="" fetchpriority="high" width="1280" height="800">
-    <div><span class="eyebrow">每日 05:30 原产地直采配额</span>
+    <div><span class="eyebrow">每日首批次严选</span>
       <h1>业主私享<br>鲜食礼遇</h1>
-      <p>严选核心产区头茬鲜品，冷链专车直达府邸</p>
+      <p>每日首批次优中选优 · 管家人工二次精挑配送</p>
       <button class="primary" data-action="browse">臻选今日鲜食</button>
     </div>
   </section>
   ${marketCarousel()}
-  <button class="trace" data-action="trace">
-    <span class="trace-play" aria-hidden="true">▶</span>
-    <span><strong>直供流程影像</strong><small>从庄园采摘到恒温启运 · 演示预览</small></span>
+  <button class="fresh-guarantee" data-action="fresh-guarantee" aria-haspopup="dialog">
+    <span class="guarantee-icon">${icon('shield-check')}</span>
+    <span><strong>品控与赔付承诺</strong><small>到站二次精挑 · 坏果缺重 1 分钟极速赔付</small></span>
   </button>
   <button class="rewards-banner" data-action="gift-hall"><span>${icon('gift')}</span><span>
     <strong>业主会籍礼遇 · 积分兑换精选好礼</strong><small>当前可用 ${formatPoints(availablePoints())} 积分</small></span></button>
@@ -519,24 +517,6 @@ function openInfo(title, content) {
     <button class="icon-button" data-action="close" aria-label="关闭">×</button></header>${content}`;
   if (!dialog.open) dialog.showModal();
   syncCarousels();
-}
-
-function drawPreview() {
-  const scene = marketScenes[previewFrame];
-  dialog.querySelector('[data-preview]').innerHTML = `<img src="./assets/${scene.photo}.jpg" alt="">
-    <p><strong>${scene.time} · ${scene.title}</strong></p><p class="muted">${scene.detail}</p>`;
-}
-function stopPreview() {
-  clearInterval(previewTimer);
-  previewTimer = undefined;
-}
-function playPreview() {
-  stopPreview();
-  previewTimer = setInterval(() => {
-    if (!dialog.open || !dialog.querySelector('[data-preview]')) return stopPreview();
-    previewFrame = (previewFrame + 1) % marketScenes.length;
-    drawPreview();
-  }, 3600);
 }
 
 const pageHead = (title, description) => `<header class="page-head"><h1>${title}</h1><p>${description}</p></header>`;
@@ -608,7 +588,7 @@ function searchPrice(item) {
 
 function searchEndorsement(item) {
   if (item.worker) return `${item.worker} · 本小区已服务 ${item.households} 户`;
-  return searchEndorsements[item.id] || '礼宾产地直采 · 到货复秤';
+  return searchEndorsements[item.id] || '买手精选 · 到货复秤';
 }
 
 function searchAction(item) {
@@ -1370,7 +1350,6 @@ dialog.addEventListener('submit', event => {
 
 dialog.addEventListener('close', () => {
   syncCarousels();
-  stopPreview();
   clearClaimPhoto();
 });
 dialog.addEventListener('change', event => {
@@ -1518,25 +1497,18 @@ document.addEventListener('click', event => {
     case 'bag': showBag(); break;
     case 'quality':
       openInfo('业主服务宪章', `<ul class="agreement">
-        <li><strong>清晨产地直采</strong><p>按批采摘或收货，分装后冷链直送。</p></li>
+        <li><strong>首批次买手精选</strong><p>按果径和鲜度选货，到站人工复检后分装。</p></li>
         <li><strong>到货挑拣与复秤</strong><p>按批记录到货状态，分装后复核净重。</p></li>
         <li><strong>品质问题优先处理</strong><p>发现坏果可直接通过管家售后登记。</p></li>
         <li><strong>按日鲜食配额</strong><p>每日限量，批次到期下架。</p></li>
       </ul>`);
       break;
-    case 'trace':
-      previewFrame = 0;
-      openInfo('直供流程影像 · 演示', '<div class="preview-frame" data-preview></div><div class="preview-actions"><button class="primary" data-action="toggle-preview">暂停预览</button><button class="icon-button" data-action="next-frame">下一幕</button></div>');
-      drawPreview();
-      playPreview();
-      break;
-    case 'toggle-preview':
-      if (previewTimer) { stopPreview(); button.textContent = '播放预览'; }
-      else { playPreview(); button.textContent = '暂停预览'; }
-      break;
-    case 'next-frame':
-      previewFrame = (previewFrame + 1) % marketScenes.length;
-      drawPreview();
+    case 'fresh-guarantee':
+      openInfo('业主鲜食服务保障卡', `<ul class="agreement guarantee-list">
+        <li><strong>开箱验货</strong><p>到站逐盒复检，软磕、坏果直接筛除，确认状态后再分装。</p></li>
+        <li><strong>净重承诺</strong><p>电子秤去除包装重量后复秤，按商品标注的净重交付。</p></li>
+        <li><strong>坏果秒赔</strong><p>发现坏果或缺重，可在管家售后提交照片，按 1 分钟内赔付标准处理。线上赔付为演示流程。</p></li>
+      </ul>`);
       break;
     case 'close': dialog.close(); break;
     case 'add': case 'plus': changeQuantity(id, 1); break;

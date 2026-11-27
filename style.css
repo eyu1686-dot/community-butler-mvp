@@ -88,9 +88,9 @@ dialog::backdrop{background:#18181ba3}.dialog-head{display:flex;justify-content:
 .brand span{font-size:13px;line-height:1.3}
 .quality-badge{min-height:44px;padding:7px 10px;border:1px solid var(--line);border-radius:14px;background:var(--gold-wash);color:var(--gold-dark);font-size:13px;font-weight:800;white-space:nowrap}
 .market-hero{min-height:250px}
-.trace{display:flex;align-items:center;gap:12px;width:100%;min-height:72px;margin:14px 0 19px;padding:14px;border-radius:18px;background:var(--stone-wash);text-align:left;color:var(--obsidian)}
-.trace strong,.trace small{display:block}.trace small{color:var(--muted);font-size:13px;margin-top:2px}
-.trace-play{display:grid;place-items:center;flex:none;width:43px;height:43px;border-radius:50%;background:var(--obsidian);color:#FFFFFF}
+.fresh-guarantee{display:flex;align-items:center;gap:12px;width:100%;min-height:72px;margin:14px 0 19px;padding:14px;border-radius:18px;background:var(--stone-wash);text-align:left;color:var(--obsidian)}
+.fresh-guarantee strong,.fresh-guarantee small{display:block}.fresh-guarantee small{color:var(--muted);font-size:13px;margin-top:2px}
+.guarantee-icon{display:grid;place-items:center;flex:none;width:43px;height:43px;border-radius:50%;background:var(--obsidian);color:#FFFFFF}
 .group-note{color:var(--muted);font-size:14px;margin-bottom:12px}
 .group-products{display:grid;gap:19px}
 .group-product{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-card);padding:20px;box-shadow:var(--shadow-card)}
@@ -122,8 +122,6 @@ body.has-checkout{padding-bottom:calc(163px + env(safe-area-inset-bottom))}
 .delivery-option small{display:block;font-size:13px;color:var(--muted)}
 .agreement{display:grid;gap:10px;margin:0;padding-left:22px}
 .agreement li p{font-size:14px;color:var(--muted)}
-.preview-frame img{display:block;width:100%;height:clamp(140px,45vw,240px);object-fit:cover;border-radius:14px;margin:8px 0}
-.preview-actions{display:flex;gap:8px;margin-top:12px}.preview-actions .icon-button{padding:0 10px}
 @media(max-width:359px){.quality-badge{font-size:12px;padding-inline:6px}.brand span{font-size:12px}.group-summary img{width:82px}.group-summary h3{font-size:16px}}
 @media(prefers-reduced-motion:reduce){progress::-webkit-progress-value{transition:none}}
 
@@ -265,7 +263,7 @@ dialog:has(.rewards-content){inset:auto 0 0;width:min(100%,600px);max-height:cal
 .market-slide .fresh-media{border-radius:0;aspect-ratio:16/10}
 .market-caption{align-self:end;position:absolute;inset:auto 0 0;padding:30px 13px 11px;background:linear-gradient(transparent,#18181bf0 63%,#18181B)}
 .market-caption p{display:flex;flex-wrap:wrap;gap:7px;align-items:center;font-size:12px}
-.market-caption p span,.market-caption time{border-radius:20px;padding:3px 7px;background:#f5ecdde8;color:#34291b}
+.market-caption p span{border-radius:20px;padding:3px 7px;background:#f5ecdde8;color:#34291b}
 .market-caption h3{font-size:19px;margin:4px 0 0}
 .market-caption small{font-size:13px}
 .fresh-filters{margin-bottom:10px}
@@ -345,7 +343,7 @@ dialog:has(.ops-detail){inset:auto 0 0;width:min(100%,600px);max-height:calc(100
 .tier strong{font-size:21px}
 .service-metrics strong{color:var(--obsidian)}
 .service-metrics{gap:7px;margin-top:17px}
-.rewards-banner,.trace{border:1px solid var(--line)}
+.rewards-banner,.fresh-guarantee{border:1px solid var(--line)}
 .nav{
   background:#ffffffF5;
   box-shadow:0 -2px 18px #18181b0a;
@@ -416,7 +414,7 @@ dialog[open]::backdrop{animation:veil-in 200ms ease-out both}
 .group-summary .price,.search-price,.service-price strong,.booking-item span{color:var(--obsidian)}
 .section-head{margin-top:25px}
 .market-caption{background:linear-gradient(transparent,#18181bc9 64%,#18181bed)}
-.market-caption p span,.market-caption time{background:#f3efe6f0;color:#352c20}
+.market-caption p span{background:#f3efe6f0;color:#352c20}
 .membership-label{display:block;color:#ddc298;font-size:11px;letter-spacing:.09em;margin-bottom:4px}
 .gift-grid{gap:13px}
 .gift-card{padding:10px;gap:6px;box-shadow:var(--shadow-card)}
@@ -430,3 +428,8 @@ dialog[open]::backdrop{animation:veil-in 200ms ease-out both}
   .brand strong{font-size:16px}
   .quality-badge{font-size:11px}
 }
+
+.guarantee-icon svg{width:20px;height:20px}
+.guarantee-list{list-style:none;padding:0;gap:0}
+.guarantee-list li{padding:11px 0}
+.guarantee-list li+li{border-top:1px solid var(--line)}
