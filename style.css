@@ -254,3 +254,5 @@ dialog:has(.rewards-content){inset:auto 0 0;width:min(100%,600px);max-height:cal
 .quality-tags span{border-radius:20px;padding:4px 8px;background:#edf4e9;color:var(--green);font-size:12px;font-weight:750}
 .fresh-gallery .fresh-media{border-radius:13px;aspect-ratio:16/9}
 .fresh-gallery .service-filters{margin:7px 0 0}
+.gift-goal{margin-top:8px;padding:9px 10px;border:1px solid #e6d6b8;border-radius:11px;background:#fff5e2;color:#553713;font-size:14px}
+.gift-goal progress{display:block;width:100%;height:8px;margin-top:6px;accent-color:var(--green)}

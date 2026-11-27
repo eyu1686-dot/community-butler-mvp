@@ -92,10 +92,14 @@ const demoOrder = {
   items:[{ id:'dandong', name:'丹东红颜草莓', price:5900, quantity:1 }],
   deliveryLabel:'北门管家自提点',
 };
-const defaults = { cart:{}, orders:[], requests:[], wishes:[], messages:[], pointEarnings:[], redemptions:[] };
+const startingPoints = 150;
+const defaults = { pointGrant:startingPoints, cart:{}, orders:[], requests:[], wishes:[], messages:[], pointEarnings:[], redemptions:[] };
 let state;
 try {
-  state = { ...defaults, ...JSON.parse(localStorage.getItem(storageKey)) };
+  const saved = JSON.parse(localStorage.getItem(storageKey));
+  state = { ...defaults, ...saved };
+  // Existing wallets already received the earlier 380-point signup grant.
+  if (saved && saved.pointGrant === undefined && Object.hasOwn(saved, 'pointEarnings')) state.pointGrant = 380;
 } catch {
   state = defaults;
 }
@@ -183,33 +187,38 @@ function drawIcons() {
   window.lucide?.createIcons();
 }
 
-const startingPoints = 380;
 const residentAddress = { building:'3栋2单元', room:'301室' };
 const giftCategories = { all:'全部好礼', home:'居家小家电', toys:'孩童玩具', daily:'日常生活' };
 const gifts = [
-  { id:'blender', category:'home', name:'便携无线榨汁杯', cost:1200, stock:6, icon:'cup-soda' },
-  { id:'kettle', category:'home', name:'智能恒温电水壶', cost:2500, stock:4, icon:'thermometer' },
-  { id:'cooker', category:'home', name:'家用多功能电煮锅', cost:3200, stock:3, icon:'cooking-pot' },
-  { id:'fan', category:'home', name:'桌面静音小风扇', cost:800, stock:8, icon:'fan' },
-  { id:'tiles', category:'toys', name:'磁力片百变拼搭积木套装', cost:1500, stock:5, icon:'blocks' },
-  { id:'board', category:'toys', name:'儿童双面磁性画板', cost:980, stock:6, icon:'palette' },
-  { id:'trucks', category:'toys', name:'合金回力工程车礼盒', cost:680, stock:8, icon:'truck' },
-  { id:'books', category:'toys', name:'恐龙科普立体绘本套装', cost:500, stock:10, icon:'book-open' },
-  { id:'voucher', category:'daily', name:'本小区跑腿免单券', cost:200, stock:20, icon:'ticket' },
-  { id:'cloths', category:'daily', name:'厨房加厚懒人抹布3卷装', cost:300, stock:12, icon:'layers' },
+  { id:'blender', category:'home', name:'便携无线榨汁杯', cost:2800, level:'family', stock:6, icon:'cup-soda' },
+  { id:'kettle', category:'home', name:'智能恒温电水壶', cost:3800, level:'family', stock:4, icon:'thermometer' },
+  { id:'cooker', category:'home', name:'家用多功能电煮锅', cost:5500, level:'family', stock:3, icon:'cooking-pot' },
+  { id:'fan', category:'home', name:'桌面静音小风扇', cost:1280, level:'daily', stock:8, icon:'fan' },
+  { id:'tiles', category:'toys', name:'磁力片百变拼搭积木套装', cost:2200, level:'family', stock:5, icon:'blocks' },
+  { id:'board', category:'toys', name:'儿童双面磁性画板', cost:1080, level:'daily', stock:6, icon:'palette' },
+  { id:'trucks', category:'toys', name:'合金回力工程车礼盒', cost:780, level:'daily', stock:8, icon:'truck' },
+  { id:'books', category:'toys', name:'恐龙科普立体绘本套装', cost:580, level:'daily', stock:10, icon:'book-open' },
+  { id:'voucher', category:'daily', name:'本小区跑腿免单券', cost:100, level:'starter', stock:20, icon:'ticket' },
+  { id:'cloths', category:'daily', name:'厨房加厚懒人抹布 3 卷装', cost:180, level:'starter', stock:12, icon:'layers' },
+  { id:'fruit-sample', category:'daily', name:'鲜榨果蔬试吃装/小份水果加赠券', cost:260, level:'starter', stock:12, icon:'apple' },
 ];
+const giftLevels = { starter:'入门引流档', daily:'日常实用档', family:'高价值家庭大奖档' };
 let giftCategory = 'all';
-const pointsFor = cents => Math.floor(cents / 10);
+const errandMinimum = 500;
+const pointsFor = (cents, isErrand = false) =>
+  isErrand && cents < errandMinimum ? 0 : Math.floor(cents / 100);
+const pointsEstimateText = (cents, isErrand = false) =>
+  `本单预计可获 +${formatPoints(pointsFor(cents, isErrand))} 积分（¥1 = 1积分，累计可换家电好礼）`;
 const formatPoints = value => value.toLocaleString('zh-CN');
 const fulfillment = '随下次生鲜订单免费送上门或北门自提点领取';
-const availablePoints = () => startingPoints
+const availablePoints = () => state.pointGrant
   + state.pointEarnings.reduce((sum, entry) => sum + entry.points, 0)
   - state.redemptions.reduce((sum, entry) => sum + entry.points, 0);
 const giftStock = gift => gift.stock - state.redemptions.filter(entry => entry.giftId === gift.id).length;
 
-function recordOrder(order) {
+function recordOrder(order, isErrand = false) {
   state.orders.unshift(order);
-  const points = pointsFor(order.total);
+  const points = pointsFor(order.total, isErrand);
   if (!points) return;
   const names = order.items.map(item => item.name).join('、');
   state.pointEarnings.unshift({
@@ -217,8 +226,19 @@ function recordOrder(order) {
   });
 }
 
-function pointsEstimate(cents) {
-  return `<p class="points-estimate" data-points-estimate aria-live="polite">本单预计可获 +${formatPoints(pointsFor(cents))} 积分</p>`;
+function pointsEstimate(cents, isErrand = false) {
+  return `<p class="points-estimate" data-points-estimate aria-live="polite">${pointsEstimateText(cents, isErrand)}
+    ${isErrand && cents < errandMinimum ? '<br><small>跑腿订单单笔满 ¥5 起计积分。</small>' : ''}</p>`;
+}
+
+function giftGoal() {
+  const gift = gifts.find(item => item.id === 'board');
+  const current = Math.max(0, Math.min(availablePoints(), gift.cost));
+  const remaining = gift.cost - current;
+  return `<div class="gift-goal"><label>
+    <strong>${remaining ? `再攒 ${formatPoints(remaining)} 积分即可免费兑换【${gift.name}】` : `积分已达标，可免费兑换【${gift.name}】`}</strong>
+    <progress value="${current}" max="${gift.cost}"></progress>
+  </label></div>`;
 }
 
 function giftCards() {
@@ -228,7 +248,7 @@ function giftCards() {
     const action = !stock ? '已兑完' : difference > 0 ? `还差 ${formatPoints(difference)} 积分` : '立即兑换';
     return `<article class="gift-card" data-gift="${gift.id}">
       <span class="gift-icon">${icon(gift.icon)}</span><h3>${gift.name}</h3>
-      <strong>${formatPoints(gift.cost)} 积分</strong><p class="muted">剩余 ${stock} 件</p>
+      <strong>${formatPoints(gift.cost)} 积分</strong><p class="muted">${giftLevels[gift.level]} · 剩余 ${stock} 件</p>
       <button class="primary" data-action="gift-confirm" data-id="${gift.id}" aria-label="${action} · ${gift.name}" ${stock && difference <= 0 ? '' : 'disabled'}>${action}</button>
     </article>`;
   }).join('');
@@ -241,7 +261,8 @@ function showGiftHall(reset = false) {
       <button class="secondary" data-action="points-history">积分明细</button>
       <button class="secondary" data-action="gift-history">兑换记录</button>
     </div>
-    <p class="muted rewards-rule">每消费 ¥1 = 10 邻里积分，新用户赠 380 积分。</p>
+    ${giftGoal()}
+    <p class="muted rewards-rule">每实际消费 ¥1 = 1 邻里积分，按整元累计；跑腿订单单笔满 ¥5 起计积分。新用户赠 ${startingPoints} 积分。</p>
     <div class="service-filters" role="group" aria-label="好礼分类">${Object.entries(giftCategories).map(([id,label]) => `
       <button class="service-filter" data-action="gift-category" data-id="${id}" aria-pressed="${giftCategory === id}">${label}</button>`).join('')}</div>
     <div class="gift-grid">${giftCards()}</div>`);
@@ -259,7 +280,7 @@ function showPointsHistory() {
     ...state.pointEarnings.map(entry => ({ ...entry, amount:'+' + formatPoints(entry.points) })),
     ...state.redemptions.map(entry => ({ label:'兑换' + entry.name, time:entry.time, at:entry.at, amount:'−' + formatPoints(entry.points) })),
   ].sort((a, b) => b.at - a.at);
-  entries.push({ label:'新用户赠送', amount:'+380' });
+  entries.push({ label:'新用户赠送', amount:'+' + formatPoints(state.pointGrant) });
   openRewards('积分明细', `<p class="muted">当前可用 ${formatPoints(availablePoints())} 积分</p>
     <div>${entries.map(entry => `<div class="row"><div><strong>${escapeHtml(entry.label)}</strong><p class="muted">${escapeHtml(entry.time || '')}</p></div><span class="status">${entry.amount} 积分</span></div>`).join('')}</div>
     <button class="secondary" data-action="gift-back">返回兑换馆</button>`);
@@ -581,7 +602,7 @@ function showBooking(id, previous) {
   if (!item) return;
   const [building, room] = previous?.address.match(/^(.*栋) (\d+) 室$/)?.slice(1) || [];
   openInfo('预约下单', `<p class="booking-item"><strong>${item.name}</strong> <span>${servicePrice(item.price)} ${item.unit}</span></p>
-    ${pointsEstimate(item.price)}
+    ${pointsEstimate(item.price, item.category === 'errands')}
     <form id="booking-form" data-service="${item.id}">
       <div class="booking-address">
         <label class="field">楼栋<select name="building" required><option value="">选择楼栋</option>${bookingOptions(buildings, building)}</select></label>
@@ -1003,7 +1024,7 @@ dialog.addEventListener('submit', event => {
     kind:'service', status:matchingStatus, time:timestamp(), total:item.price,
     items:[{ id:item.id, name:item.name, price:item.price, quantity:1 }],
     booking:{ address:`${building} ${room} 室`, slot, notes:notes.trim().slice(0, 200), unit:item.unit },
-  });
+  }, item.category === 'errands');
   const saved = save();
   dialog.close();
   showOrders('预约成功', saved);
@@ -1033,7 +1054,7 @@ dialog.addEventListener('change', event => {
   dialog.querySelector('[data-delivery-fee]').textContent = money(fee);
   const total = cartTotal() + fee;
   dialog.querySelector('[data-order-total]').textContent = money(total);
-  dialog.querySelector('[data-points-estimate]').textContent = `本单预计可获 +${formatPoints(pointsFor(total))} 积分`;
+  dialog.querySelector('[data-points-estimate]').textContent = pointsEstimateText(total);
 });
 
 document.addEventListener('error', event => {
