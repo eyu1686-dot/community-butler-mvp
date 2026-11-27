@@ -13,4 +13,4 @@
 
 GitHub 仓库的 Settings → Pages → Source 选择 GitHub Actions。`main` 分支更新会自动发布，Actions 的部署任务会显示预览地址。用 iPhone Safari 打开 HTTPS 地址，点按「分享」→「添加到主屏幕」，如有「作为网页 App 打开」选项，保持开启。
 
-拼团按北京时间每日 22:00 截单，按提交时已解锁的阶梯价结算。图片使用 Unsplash 素材和 AI 生成的演示图片。Tailwind CSS 和 Lucide 通过 jsDelivr 加载。Service Worker 缓存应用自身静态资源。
+拼团按北京时间每日 22:00 截单，按提交时已解锁的阶梯价结算。图片使用 Unsplash 素材和 AI 生成的演示图片。Tailwind CSS 通过 jsDelivr 加载，Lucide 图标随站点发布。Service Worker 缓存应用自身静态资源。
