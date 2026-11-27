@@ -18,6 +18,25 @@
   <title>阳光花园 · 生活管家</title>
 </head>
 <body>
+  <button id="launch-screen" class="launch-screen" type="button" aria-label="跳过云邸欢迎画面">
+    <svg class="launch-mark" viewBox="0 0 88 96" width="88" height="96" fill="none" aria-hidden="true">
+      <path d="M10 85V36L44 10l34 26v49H10Z M20 85V41l24-18 24 18v44 M34 85V52h20v33 M44 52v33" stroke="currentColor" stroke-width="0.85" stroke-linejoin="round"/>
+      <path d="M0 90h88M44 1v5" stroke="currentColor" stroke-width="0.65"/>
+    </svg>
+    <span class="launch-title">云邸 · 私人生活礼宾部</span>
+    <span class="launch-subtitle" lang="en">PRIVATE CONCIERGE · RESIDENCE</span>
+  </button>
+  <script>
+    (() => {
+      const screen = document.getElementById('launch-screen');
+      const dismiss = () => { screen.hidden = true; };
+      const timer = setTimeout(dismiss, 1200);
+      screen.addEventListener('click', () => {
+        clearTimeout(timer);
+        dismiss();
+      }, { once:true });
+    })();
+  </script>
   <header class="topbar shell">
     <div class="brand"><strong>阳光花园 · 生活管家</strong></div>
     <button class="quality-badge" data-action="quality">服务保障</button>
