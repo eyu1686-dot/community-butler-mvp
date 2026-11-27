@@ -411,7 +411,7 @@ function showPointsHistory() {
 }
 
 function showGiftHistory() {
-  openRewards('礼品兑换记录', `${state.redemptions.map(entry => `<article class="service-order">
+  openRewards('礼品兑换记录', `<p class="muted">当前可用 ${formatPoints(availablePoints())} 积分</p>${state.redemptions.map(entry => `<article class="service-order">
     <strong>${escapeHtml(entry.name)} · ${formatPoints(entry.points)} 积分</strong>
     <p>核销码 ${escapeHtml(entry.code)}</p><p class="muted">${escapeHtml(entry.address)} · ${escapeHtml(entry.time)}</p>
     <p class="muted">${fulfillment}</p></article>`).join('') || '<p class="muted">暂无兑换记录。</p>'}
@@ -477,7 +477,7 @@ function refreshGroups() {
     const item = direct.find(product => product.id === card.dataset.product);
     card.querySelector('[data-group-price]').textContent = money(displayPrice(item));
     const button = card.querySelector('.join');
-    const label = !remaining ? '已截单' : joined(item) >= limit ? '本批已订满' : '加入购物袋';
+    const label = joined(item) >= limit ? '本批已订满' : '加入购物袋';
     button.disabled = label !== '加入购物袋';
     button.textContent = label;
     button.setAttribute('aria-label', `${label} · ${item.name}`);
@@ -487,14 +487,14 @@ function refreshGroups() {
   const item = direct.find(product => product.id === detail.dataset.detailProduct);
   const level = tier(item);
   detail.querySelector('[data-group-price]').textContent = searchPrice(item);
-  detail.querySelector('[data-cutoff]').textContent = remaining ? `距今晚 22:00 截单还剩 ${clock}` : '今晚已截单';
+  detail.querySelector('[data-cutoff]').textContent = remaining ? `距今晚 22:00 截单还剩 ${clock}` : '已过 22:00 截单参考时间 · 仍可下单';
   detail.querySelector('[data-joined]').textContent = `已预订 ${joined(item)}/${limit} 份`;
   detail.querySelectorAll('.tier').forEach((element,index) => {
     element.classList.toggle('unlocked', index === level);
     element.querySelector('small').textContent = index === level ? '当前礼遇价' : index < level ? '已达标' : '待解锁';
   });
   const action = detail.querySelector('[data-action="search-add"]');
-  const label = !remaining ? '已截单' : joined(item) >= limit ? '本批已订满' : '加购';
+  const label = joined(item) >= limit ? '本批已订满' : '加购';
   action.disabled = label !== '加购';
   action.textContent = label;
   action.setAttribute('aria-label', `${label} · ${item.name}`);
@@ -587,7 +587,7 @@ function searchEndorsement(item) {
 
 function searchAction(item) {
   if (!item.tiers) return `<button class="primary" data-action="book-service" data-id="${item.id}" aria-label="立即预约 · ${item.name}">立即预约</button>`;
-  const unavailable = !batchTime().remaining ? '已截单' : joined(item) >= limit ? '本批已订满' : '';
+  const unavailable = joined(item) >= limit ? '本批已订满' : '';
   return `<button class="primary" data-action="search-add" data-id="${item.id}" aria-label="${unavailable || '加购'} · ${item.name}" ${unavailable ? 'disabled' : ''}>${unavailable || '加购'}</button>`;
 }
 
@@ -873,6 +873,7 @@ function showClaim(id) {
 function displayClaimPhoto(source, label) {
   const form = dialog.querySelector('#claim-form');
   const photo = form.querySelector('.claim-photo');
+  delete form.dataset.photoFailed;
   photo.src = source;
   photo.hidden = false;
   form.querySelector('[data-photo-status]').textContent = label;
@@ -895,18 +896,32 @@ function completeReviews() {
   if (next.length) claimTimer = setTimeout(completeReviews, Math.max(0, Math.min(...next) - now));
 }
 
+function rejectClaimPhoto(form) {
+  clearClaimPhoto();
+  form.elements.photo.value = '';
+  const photo = form.querySelector('.claim-photo');
+  photo.hidden = true;
+  photo.removeAttribute('src');
+  form.dataset.photoFailed = 'true';
+  form.querySelector('[data-photo-status]').textContent = '图片读取失败，请重新选择';
+}
+
 async function evidenceThumbnail(image) {
-  if (image.getAttribute('src') === demoDamage) return demoDamage;
   try {
     await image.decode();
+    if (!image.naturalWidth || !image.naturalHeight) return null;
+    if (image.getAttribute('src') === demoDamage) return demoDamage;
     const ratio = Math.min(1, 360 / Math.max(image.naturalWidth, image.naturalHeight));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
-    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.72);
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const thumbnail = canvas.toDataURL('image/jpeg', 0.72);
+    return /^data:image\/jpeg;base64,./.test(thumbnail) ? thumbnail : null;
   } catch {
-    return '';
+    return null;
   }
 }
 
@@ -915,7 +930,7 @@ async function submitClaim(form) {
   const order = state.orders.find(item => item.id === id);
   if (!order || order.claim || !issueTypes.includes(issue) || !['refund','replacement'].includes(method)) return;
   if (form.querySelector('.claim-photo').hidden) {
-    form.querySelector('[data-photo-status]').textContent = '请选择本地照片或填入演示破损图。';
+    if (!form.dataset.photoFailed) form.querySelector('[data-photo-status]').textContent = '请选择本地照片或填入演示破损图。';
     return;
   }
   const submit = form.querySelector('[type="submit"]');
@@ -925,7 +940,12 @@ async function submitClaim(form) {
   const source = photo.src;
   const image = await evidenceThumbnail(photo);
   if (!form.isConnected || !dialog.open || order.claim) return;
-  if (photo.hidden || photo.src !== source) { submit.disabled = false; return; }
+  submit.disabled = false;
+  if (photo.hidden || photo.src !== source) return;
+  if (!image) {
+    rejectClaimPhoto(form);
+    return;
+  }
   const refund = order.demo ? 1280 : Math.round(order.total * 0.2);
   const at = Date.now();
   const duration = 1500;
@@ -933,7 +953,6 @@ async function submitClaim(form) {
     amount:method === 'refund' ? refund : 0, at, duration, reviewUntil:at + duration };
   if (!save()) {
     delete order.claim;
-    submit.disabled = false;
     form.querySelector('[data-photo-status]').textContent = '无法保存售后申请，请检查浏览器存储空间。';
     return;
   }
@@ -1120,7 +1139,7 @@ function reorder(id) {
   for (const line of order.items) {
     requested += line.quantity;
     const item = [...direct, ...products].find(product => product.id === line.id);
-    if (!item || (item.tiers && !batchTime().remaining)) continue;
+    if (!item) continue;
     const capacity = item.tiers ? limit - joined(item) : 99 - (state.cart[item.id] || 0);
     const quantity = Math.max(0, Math.min(capacity, line.quantity));
     if (!quantity) continue;
@@ -1128,7 +1147,7 @@ function reorder(id) {
     added += quantity;
   }
   if (!added) {
-    notify('原单商品已截单或暂无可购份数');
+    notify('原单商品暂无可购份数');
     return;
   }
   const saved = save();
@@ -1137,7 +1156,7 @@ function reorder(id) {
   if (added < requested || !saved) {
     const note = document.createElement('p');
     note.className = 'cutoff';
-    note.textContent = added < requested ? `原单部分商品已截单或满额，已加入 ${added} 份。` : '购物袋仅保留在当前页面。';
+    note.textContent = added < requested ? `原单部分商品暂无可购份数，已加入 ${added} 份。` : '购物袋仅保留在当前页面。';
     dialogContent.querySelector('.dialog-head').after(note);
   }
 }
@@ -1169,7 +1188,6 @@ function checkoutBlocker(lines) {
   for (const line of lines) {
     const item = direct.find(product => product.id === line.id);
     if (!item) continue;
-    if (!batchTime().remaining) return '直采已截单，请移除直采商品';
     if (tier(item) < 0) return `${item.name}还差 ${thresholds[0] - joined(item)} 份达到基础配额`;
   }
   return '';
@@ -1210,7 +1228,7 @@ function changeQuantity(id, delta) {
   syncBatch();
   const item = [...direct, ...products].find(product => product.id === id);
   if (!item) return;
-  if (delta > 0 && item.tiers && (!batchTime().remaining || joined(item) >= limit)) {
+  if (delta > 0 && item.tiers && joined(item) >= limit) {
     if (dialog.open) {
       let warning = dialog.querySelector('[data-blocker]');
       if (!warning) {
@@ -1221,8 +1239,8 @@ function changeQuantity(id, delta) {
         dialogContent.querySelector('.dialog-head').after(warning);
       }
       warning.hidden = false;
-      warning.textContent = batchTime().remaining ? '该商品本批已订满' : '该商品已截单';
-    } else notify(batchTime().remaining ? '该商品本批已订满' : '该商品已截单');
+      warning.textContent = '该商品本批已订满';
+    } else notify('该商品本批已订满');
     return;
   }
   const quantity = (state.cart[id] || 0) + delta;
@@ -1312,12 +1330,15 @@ dialog.addEventListener('change', event => {
     if (!file) return;
     clearClaimPhoto();
     if (file.type && !file.type.startsWith('image/')) {
-      event.target.form.querySelector('.claim-photo').hidden = true;
-      event.target.form.querySelector('[data-photo-status]').textContent = '请选择图片文件。';
+      rejectClaimPhoto(event.target.form);
       return;
     }
-    claimPhotoUrl = URL.createObjectURL(file);
-    displayClaimPhoto(claimPhotoUrl, '已选择本地照片');
+    try {
+      claimPhotoUrl = URL.createObjectURL(file);
+      displayClaimPhoto(claimPhotoUrl, '已选择本地照片');
+    } catch {
+      rejectClaimPhoto(event.target.form);
+    }
     return;
   }
   if (event.target.name !== 'delivery') return;
@@ -1331,6 +1352,7 @@ dialog.addEventListener('change', event => {
 
 document.addEventListener('error', event => {
   if (event.target.matches?.('[data-fresh-image]')) event.target.hidden = true;
+  if (event.target.matches?.('#claim-form .claim-photo[src]') && dialog.open) rejectClaimPhoto(event.target.closest('form'));
 }, true);
 
 document.addEventListener('click', event => {
