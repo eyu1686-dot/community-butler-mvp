@@ -23,7 +23,7 @@ const demoOrder = {
   items:[{ id:'dandong', name:'丹东红颜草莓', price:5900, quantity:1 }],
   deliveryLabel:'北门管家自提点',
 };
-const defaults = { cart:{}, orders:[], requests:[], wishes:[], messages:[] };
+const defaults = { cart:{}, orders:[], requests:[], wishes:[], messages:[], pointEarnings:[], redemptions:[] };
 let state;
 try {
   state = { ...defaults, ...JSON.parse(localStorage.getItem(storageKey)) };
@@ -114,6 +114,129 @@ function drawIcons() {
   window.lucide?.createIcons();
 }
 
+const startingPoints = 380;
+const residentAddress = { building:'3栋2单元', room:'301室' };
+const giftCategories = { all:'全部好礼', home:'居家小家电', toys:'孩童玩具', daily:'日常生活' };
+const gifts = [
+  { id:'blender', category:'home', name:'便携无线榨汁杯', cost:1200, stock:6, icon:'cup-soda' },
+  { id:'kettle', category:'home', name:'智能恒温电水壶', cost:2500, stock:4, icon:'thermometer' },
+  { id:'cooker', category:'home', name:'家用多功能电煮锅', cost:3200, stock:3, icon:'cooking-pot' },
+  { id:'fan', category:'home', name:'桌面静音小风扇', cost:800, stock:8, icon:'fan' },
+  { id:'tiles', category:'toys', name:'磁力片百变拼搭积木套装', cost:1500, stock:5, icon:'blocks' },
+  { id:'board', category:'toys', name:'儿童双面磁性画板', cost:980, stock:6, icon:'palette' },
+  { id:'trucks', category:'toys', name:'合金回力工程车礼盒', cost:680, stock:8, icon:'truck' },
+  { id:'books', category:'toys', name:'恐龙科普立体绘本套装', cost:500, stock:10, icon:'book-open' },
+  { id:'voucher', category:'daily', name:'本小区跑腿免单券', cost:200, stock:20, icon:'ticket' },
+  { id:'cloths', category:'daily', name:'厨房加厚懒人抹布3卷装', cost:300, stock:12, icon:'layers' },
+];
+let giftCategory = 'all';
+const pointsFor = cents => Math.floor(cents / 10);
+const formatPoints = value => value.toLocaleString('zh-CN');
+const fulfillment = '随下次生鲜订单免费送上门或北门自提点领取';
+const availablePoints = () => startingPoints
+  + state.pointEarnings.reduce((sum, entry) => sum + entry.points, 0)
+  - state.redemptions.reduce((sum, entry) => sum + entry.points, 0);
+const giftStock = gift => gift.stock - state.redemptions.filter(entry => entry.giftId === gift.id).length;
+
+function recordOrder(order) {
+  state.orders.unshift(order);
+  const points = pointsFor(order.total);
+  if (!points) return;
+  const names = order.items.map(item => item.name).join('、');
+  state.pointEarnings.unshift({
+    orderId:order.id, label:(order.kind === 'service' ? '预约' : '购买') + names, points, time:order.time, at:Date.now(),
+  });
+}
+
+function pointsEstimate(cents) {
+  return `<p class="points-estimate" data-points-estimate aria-live="polite">本单预计可获 +${formatPoints(pointsFor(cents))} 积分</p>`;
+}
+
+function giftCards() {
+  return gifts.filter(gift => giftCategory === 'all' || gift.category === giftCategory).map(gift => {
+    const stock = giftStock(gift);
+    const difference = gift.cost - availablePoints();
+    const action = !stock ? '已兑完' : difference > 0 ? `还差 ${formatPoints(difference)} 积分` : '立即兑换';
+    return `<article class="gift-card" data-gift="${gift.id}">
+      <span class="gift-icon">${icon(gift.icon)}</span><h3>${gift.name}</h3>
+      <strong>${formatPoints(gift.cost)} 积分</strong><p class="muted">剩余 ${stock} 件</p>
+      <button class="primary" data-action="gift-confirm" data-id="${gift.id}" aria-label="${action} · ${gift.name}" ${stock && difference <= 0 ? '' : 'disabled'}>${action}</button>
+    </article>`;
+  }).join('');
+}
+
+function showGiftHall(reset = false) {
+  if (reset) giftCategory = 'all';
+  openRewards('邻里积分兑换馆', `<div class="rewards-balance">
+      <div>可用积分<strong>${formatPoints(availablePoints())}</strong></div>
+      <button class="secondary" data-action="points-history">积分明细</button>
+      <button class="secondary" data-action="gift-history">兑换记录</button>
+    </div>
+    <p class="muted rewards-rule">每消费 ¥1 = 10 邻里积分，新用户赠 380 积分。</p>
+    <div class="service-filters" role="group" aria-label="好礼分类">${Object.entries(giftCategories).map(([id,label]) => `
+      <button class="service-filter" data-action="gift-category" data-id="${id}" aria-pressed="${giftCategory === id}">${label}</button>`).join('')}</div>
+    <div class="gift-grid">${giftCards()}</div>`);
+}
+
+function openRewards(title, body) {
+  openInfo(title, `<div class="rewards-content">${body}</div>`);
+  dialog.scrollTop = 0;
+  drawIcons();
+  dialog.querySelector('.dialog-head button').focus({ preventScroll:true });
+}
+
+function showPointsHistory() {
+  const entries = [
+    ...state.pointEarnings.map(entry => ({ ...entry, amount:'+' + formatPoints(entry.points) })),
+    ...state.redemptions.map(entry => ({ label:'兑换' + entry.name, time:entry.time, at:entry.at, amount:'−' + formatPoints(entry.points) })),
+  ].sort((a, b) => b.at - a.at);
+  entries.push({ label:'新用户赠送', amount:'+380' });
+  openRewards('积分明细', `<p class="muted">当前可用 ${formatPoints(availablePoints())} 积分</p>
+    <div>${entries.map(entry => `<div class="row"><div><strong>${escapeHtml(entry.label)}</strong><p class="muted">${escapeHtml(entry.time || '')}</p></div><span class="status">${entry.amount} 积分</span></div>`).join('')}</div>
+    <button class="secondary" data-action="gift-back">返回兑换馆</button>`);
+}
+
+function showGiftHistory() {
+  openRewards('礼品兑换记录', `${state.redemptions.map(entry => `<article class="service-order">
+    <strong>${escapeHtml(entry.name)} · ${formatPoints(entry.points)} 积分</strong>
+    <p>核销码 ${escapeHtml(entry.code)}</p><p class="muted">${escapeHtml(entry.address)} · ${escapeHtml(entry.time)}</p>
+    <p class="muted">${fulfillment}</p></article>`).join('') || '<p class="muted">暂无兑换记录。</p>'}
+    <button class="secondary" data-action="gift-back">返回兑换馆</button>`);
+}
+
+function confirmGift(id) {
+  const gift = gifts.find(item => item.id === id);
+  if (!gift || !giftStock(gift) || availablePoints() < gift.cost) return;
+  openRewards('确认兑换', `<div class="gift-confirmation">
+    <h3>${gift.name}</h3><p>将扣除 ${formatPoints(gift.cost)} 积分</p>
+    <p>绑定地址：阳光花园一期 · ${residentAddress.building} ${residentAddress.room}</p>
+    <p>${fulfillment}。</p>
+    <div class="search-actions"><button class="secondary" data-action="gift-back">返回兑换馆</button>
+    <button class="primary" data-action="gift-redeem" data-id="${gift.id}">确认兑换</button></div></div>`);
+}
+
+function redeemGift(id) {
+  const gift = gifts.find(item => item.id === id);
+  if (!gift || !giftStock(gift) || availablePoints() < gift.cost) {
+    showGiftHall();
+    return;
+  }
+  const address = `${residentAddress.building} ${residentAddress.room}`;
+  const code = 'YG-' + Date.now().toString(36).toUpperCase() + '-' + (state.redemptions.length + 1);
+  state.redemptions.unshift({ giftId:id, name:gift.name, points:gift.cost, code, address, time:timestamp(), at:Date.now() });
+  if (!save()) {
+    state.redemptions.shift();
+    openRewards('暂时无法兑换', '<p>浏览器无法保存兑换记录，积分和库存未扣减。</p><button class="secondary" data-action="gift-back">返回兑换馆</button>');
+    return;
+  }
+  render();
+  openRewards('兑换成功', `<div class="gift-confirmation">
+    <h3>${gift.name}</h3><p>礼品核销码</p><strong class="gift-code">${code}</strong>
+    <p>剩余 ${formatPoints(availablePoints())} 积分 · ${address}</p><p>${fulfillment}。</p>
+    <div class="search-actions"><button class="secondary" data-action="gift-back">返回兑换馆</button>
+    <button class="secondary" data-action="gift-history">查看兑换记录</button></div></div>`);
+}
+
 function freshPage() {
   return `<section class="hero market-hero">
     <img src="./assets/market.jpg" alt="" fetchpriority="high" width="724" height="724">
@@ -127,6 +250,8 @@ function freshPage() {
     <span class="trace-play" aria-hidden="true">▶</span>
     <span><strong>今日早 5:30 批发市场直采实拍</strong><small>演示预览 · 看采购、挑拣与复秤</small></span>
   </button>
+  <button class="rewards-banner" data-action="gift-hall"><span>${icon('gift')}</span><span>
+    <strong>消费攒积分 · 免费换家电/玩具</strong><small>当前可用 ${formatPoints(availablePoints())} 积分</small></span></button>
   <section id="catalog" aria-labelledby="catalog-title">
     <div class="section-head"><h2 id="catalog-title" tabindex="-1">每日限量直采</h2><p>每款限 50 份</p></div>
     <p class="group-note">已拼份数为演示数据。按提交时已解锁的阶梯价结算。</p>
@@ -381,6 +506,7 @@ function showBooking(id, previous) {
   if (!item) return;
   const [building, room] = previous?.address.match(/^(.*栋) (\d+) 室$/)?.slice(1) || [];
   openInfo('预约下单', `<p class="booking-item"><strong>${item.name}</strong> <span>${servicePrice(item.price)} ${item.unit}</span></p>
+    ${pointsEstimate(item.price)}
     <form id="booking-form" data-service="${item.id}">
       <div class="booking-address">
         <label class="field">楼栋<select name="building" required><option value="">选择楼栋</option>${bookingOptions(buildings, building)}</select></label>
@@ -600,10 +726,12 @@ function communityPage() {
   const orders = state.orders.map(orderDetails).join('');
   return header + `
     <section class="panel resident-card">
-      <div class="resident-head"><div><h2>3栋2单元</h2><p class="muted">北门管家自提点 · 17:00–20:00</p></div>
+      <div class="resident-head"><div><h2>${residentAddress.building}</h2><p class="muted">北门管家自提点 · 17:00–20:00</p></div>
         <button class="secondary" data-action="pickup-code">我的提货码</button></div>
       <dl class="resident-stats"><div><dt>累计节省</dt><dd>${money(savings)}</dd></div>
         <div><dt>已获售后保障</dt><dd>${protectedOrders} 次</dd></div></dl>
+      <div class="resident-rewards"><div>我的积分余额 <strong>${formatPoints(availablePoints())} 积分</strong></div>
+        <button class="secondary" data-action="gift-hall">去兑换</button></div>
     </section>
     <section class="panel invite-card"><h2>申请成为本栋楼长 / 邀请邻居</h2>
       <label class="progress-label"><span>3栋已有 28 户加入</span><progress value="28" max="30"></progress></label>
@@ -698,6 +826,7 @@ function showBag(focusAction, focusId) {
         <span><strong>${option.label}</strong><small>${option.detail}</small></span></label>`).join('')}
     </fieldset>
     <p class="muted">商品 ${money(subtotal)} · 配送 <span data-delivery-fee>${money(deliveryOptions[delivery].fee)}</span></p>
+    ${pointsEstimate(subtotal + deliveryOptions[delivery].fee)}
     <p class="cutoff" data-blocker ${blocker ? '' : 'hidden'}>${blocker}</p>
     <div class="row"><strong>合计 <span data-order-total>${money(subtotal + deliveryOptions[delivery].fee)}</span></strong><button class="primary" data-action="checkout" ${blocker ? 'disabled' : ''}>提交演示订单</button></div>`
     : '<p class="muted">购物袋是空的</p>'}`;
@@ -743,7 +872,7 @@ function checkout() {
   const items = cartLines();
   if (!items.length || checkoutBlocker(items)) { showBag(); return; }
   const option = deliveryOptions[delivery];
-  state.orders.unshift({
+  recordOrder({
     id:'YG-' + Date.now().toString(36).toUpperCase(),
     items, total:cartTotal(items) + option.fee, time:timestamp(),
     savings:orderSavings(items),
@@ -794,7 +923,7 @@ dialog.addEventListener('submit', event => {
     select.reportValidity();
     return;
   }
-  state.orders.unshift({
+  recordOrder({
     id:'NB-' + Date.now().toString(36).toUpperCase(),
     kind:'service', status:matchingStatus, time:timestamp(), total:item.price,
     items:[{ id:item.id, name:item.name, price:item.price, quantity:1 }],
@@ -827,7 +956,9 @@ dialog.addEventListener('change', event => {
   delivery = event.target.value;
   const fee = deliveryOptions[delivery].fee;
   dialog.querySelector('[data-delivery-fee]').textContent = money(fee);
-  dialog.querySelector('[data-order-total]').textContent = money(cartTotal() + fee);
+  const total = cartTotal() + fee;
+  dialog.querySelector('[data-order-total]').textContent = money(total);
+  dialog.querySelector('[data-points-estimate]').textContent = `本单预计可获 +${formatPoints(pointsFor(total))} 积分`;
 });
 
 document.addEventListener('click', event => {
@@ -839,6 +970,21 @@ document.addEventListener('click', event => {
   }
   const { action, id } = button.dataset;
   switch (action) {
+    case 'gift-hall': showGiftHall(true); break;
+    case 'gift-back': showGiftHall(); break;
+    case 'gift-category':
+      if (Object.hasOwn(giftCategories, id) && id !== giftCategory) {
+        giftCategory = id;
+        dialog.querySelector('.gift-grid').innerHTML = giftCards();
+        dialog.querySelector('[data-action="gift-category"][aria-pressed="true"]').setAttribute('aria-pressed','false');
+        button.setAttribute('aria-pressed','true');
+        drawIcons();
+      }
+      break;
+    case 'points-history': showPointsHistory(); break;
+    case 'gift-history': showGiftHistory(); break;
+    case 'gift-confirm': confirmGift(id); break;
+    case 'gift-redeem': redeemGift(id); break;
     case 'global-search': showSearch(); break;
     case 'hot-search':
       searchQuery = id;

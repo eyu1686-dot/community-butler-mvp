@@ -204,3 +204,26 @@ dialog:has(.search-panel,.search-detail){inset:auto 0 0;width:min(100%,600px);ma
 .search-detail section p{margin-top:3px;color:var(--muted)}
 .search-detail button{justify-self:start}
 #catalog{scroll-margin-top:76px}
+
+/* Neighborhood points and rewards */
+.rewards-banner{display:flex;align-items:center;gap:11px;width:100%;min-height:68px;padding:11px 13px;border-radius:16px;background:#ffebc6;color:#533613;text-align:left;margin-bottom:16px}
+.rewards-banner>span:first-child,.gift-icon{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:12px;background:#fff8e8;color:#805020}
+.rewards-banner svg,.gift-icon svg{width:22px;height:22px}
+.rewards-banner strong,.rewards-banner small{display:block}
+.rewards-banner small{font-size:13px;margin-top:2px}
+.resident-rewards{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:9px;margin-top:10px}
+.resident-rewards strong{display:block;color:var(--green);font-size:20px}
+.points-estimate{padding:8px 10px;margin:8px 0;border-radius:10px;background:var(--mint);color:var(--green);font-weight:800}
+dialog:has(.rewards-content){inset:auto 0 0;width:min(100%,600px);max-height:calc(100dvh - 12px - env(safe-area-inset-top));margin:0 auto;padding:14px 16px calc(16px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;overscroll-behavior:contain}
+.rewards-balance{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:10px;border-radius:12px;background:var(--mint)}
+.rewards-balance>div{flex:1;min-width:72px;font-size:14px}
+.rewards-balance strong{display:block;color:var(--green);font-size:24px}
+.rewards-rule{font-size:14px;margin:8px 0}
+.gift-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.gift-card{display:grid;grid-template-rows:auto 1fr auto auto auto;gap:4px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px}
+.gift-card h3{font-size:15px;overflow-wrap:anywhere}
+.gift-card strong,.gift-code{color:var(--green)}
+.gift-card .muted{font-size:13px}
+.gift-card button{font-size:13px;padding-inline:4px}
+.gift-confirmation{display:grid;gap:8px}
+.gift-code{font-size:22px;overflow-wrap:anywhere}
