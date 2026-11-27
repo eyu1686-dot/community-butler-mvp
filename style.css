@@ -377,7 +377,7 @@ dialog[open]::backdrop{animation:veil-in 200ms ease-out both}
 .group-product .carousel-track{border-radius:10px}
 .group-product .carousel-controls{min-height:36px}
 .product-summary{font-size:13px;margin:3px 0 10px}
-.product-purchase,.redemption-entry{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.product-purchase,.redemption-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .product-price{display:grid;text-align:left;min-height:44px;padding:0}
 .product-price .price{color:var(--obsidian);font-size:23px;line-height:1.15}
 .product-price small{color:var(--muted);font-size:12px}
@@ -392,3 +392,7 @@ dialog[open]::backdrop{animation:veil-in 200ms ease-out both}
 .owner-tools>summary,.owner-tools details>summary{cursor:pointer;min-height:44px;align-content:center}
 .owner-tools>details{margin-top:7px;border-top:1px solid var(--line)}
 .ops-detail .panel{margin:0 0 9px}
+
+.gift-goal{display:block}
+.redemption-result{margin-top:8px;padding:9px 10px;border-radius:9px;background:var(--stone-wash);font-size:13px;overflow-wrap:anywhere}
+.redemption-result strong{color:var(--obsidian)}

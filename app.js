@@ -206,6 +206,16 @@ try {
   state = defaults;
 }
 
+// Older browser snapshots may contain missing or null wallet fields.
+const validPoints = value => (typeof value === 'number' || (typeof value === 'string' && /^\d+$/.test(value))) &&
+  Number.isSafeInteger(Number(value)) && Number(value) >= 0;
+state.pointGrant = validPoints(state.pointGrant) ? Number(state.pointGrant) : startingPoints;
+for (const field of ['pointEarnings','redemptions']) {
+  const entries = Array.isArray(state[field]) ? state[field] : [];
+  state[field] = entries.filter(entry => entry && validPoints(entry.points))
+    .map(entry => ({ ...entry, points:Number(entry.points) }));
+}
+
 if (!state.orders.some(order => order.id === demoOrder.id)) state.orders.push({ ...demoOrder });
 
 const main = document.querySelector('#main');
@@ -314,7 +324,7 @@ const fulfillment = '随下次生鲜订单免费送上门或北门自提点领�
 const availablePoints = () => state.pointGrant
   + state.pointEarnings.reduce((sum, entry) => sum + entry.points, 0)
   - state.redemptions.reduce((sum, entry) => sum + entry.points, 0);
-const giftStock = gift => gift.stock - state.redemptions.filter(entry => entry.giftId === gift.id).length;
+const giftStock = gift => Math.max(0, gift.stock - state.redemptions.filter(entry => entry.giftId === gift.id).length);
 
 function recordOrder(order, isErrand = false) {
   state.orders.unshift(order);
@@ -331,14 +341,22 @@ function pointsEstimate(cents, isErrand = false) {
     ${isErrand && cents < errandMinimum ? '<br><small>跑腿订单单笔满 ¥5 起计积分。</small>' : ''}</p>`;
 }
 
-function giftGoal() {
-  const gift = gifts.find(item => item.id === 'board');
-  const current = Math.max(0, Math.min(availablePoints(), gift.cost));
-  const remaining = gift.cost - current;
-  return `<div class="gift-goal"><label>
-    <strong>${remaining ? `再攒 ${formatPoints(remaining)} 积分即可免费兑换【${gift.name}】` : `积分已达标，可免费兑换【${gift.name}】`}</strong>
-    <progress value="${current}" max="${gift.cost}"></progress>
-  </label></div>`;
+function nextGiftProgress(className) {
+  const points = Math.max(0, availablePoints());
+  const stocked = gifts.filter(gift => giftStock(gift) > 0).sort((a,b) => a.cost - b.cost);
+  const target = stocked.find(gift => gift.cost > points);
+  if (!target) return `<p class="${className}">${stocked.length ? '所有在库好礼均已达到兑换门槛。' : '好礼已兑完。'}</p>`;
+  return `<label class="${className}">再攒 ${formatPoints(target.cost - points)} 积分可兑${target.name}
+    <progress value="${points}" max="${target.cost}"></progress></label>`;
+}
+
+function latestRedemption(entry, success = false) {
+  if (!entry) return '';
+  return `<div class="redemption-result"${success ? ' role="status"' : ''}>
+    <strong>${success ? '兑换成功' : '最近兑换'} · ${escapeHtml(entry.name)}</strong>
+    <p>扣除 ${formatPoints(entry.points)} 积分 · 核销码 ${escapeHtml(entry.code)}</p>
+    ${success ? `<p>${fulfillment}。</p>` : ''}
+  </div>`;
 }
 
 function giftCards() {
@@ -354,18 +372,24 @@ function giftCards() {
   }).join('');
 }
 
-function showGiftHall(reset = false) {
+function showGiftHall(reset = false, redeemed = null) {
   if (reset) giftCategory = 'all';
   openRewards('积分礼遇馆', `<div class="rewards-balance">
       <div><span class="membership-label">PRIVATE MEMBERSHIP · 私享会籍</span>可用积分<strong>${formatPoints(availablePoints())}</strong></div>
       <button class="secondary" data-action="points-history">积分明细</button>
       <button class="secondary" data-action="gift-history">兑换记录</button>
     </div>
-    ${giftGoal()}
+    ${latestRedemption(redeemed, true)}
+    ${nextGiftProgress('gift-goal')}
     <p class="muted rewards-rule">每实际消费 ¥1 = 1 邻里积分，按整元累计；跑腿订单单笔满 ¥5 起计积分。新用户赠 ${startingPoints} 积分。</p>
     <div class="service-filters" role="group" aria-label="好礼分类">${Object.entries(giftCategories).map(([id,label]) => `
       <button class="service-filter" data-action="gift-category" data-id="${id}" aria-pressed="${giftCategory === id}">${label}</button>`).join('')}</div>
     <div class="gift-grid">${giftCards()}</div>`);
+  if (redeemed) {
+    const result = dialog.querySelector('.redemption-result');
+    result.tabIndex = -1;
+    result.focus({ preventScroll:true });
+  }
 }
 
 function openRewards(title, body) {
@@ -413,18 +437,15 @@ function redeemGift(id) {
   }
   const address = `${residentAddress.building} ${residentAddress.room}`;
   const code = 'YG-' + Date.now().toString(36).toUpperCase() + '-' + (state.redemptions.length + 1);
-  state.redemptions.unshift({ giftId:id, name:gift.name, points:gift.cost, code, address, time:timestamp(), at:Date.now() });
+  const entry = { giftId:id, name:gift.name, points:gift.cost, code, address, time:timestamp(), at:Date.now() };
+  state.redemptions.unshift(entry);
   if (!save()) {
     state.redemptions.shift();
     openRewards('暂时无法兑换', '<p>浏览器无法保存兑换记录，积分和库存未扣减。</p><button class="secondary" data-action="gift-back">返回兑换馆</button>');
     return;
   }
   render();
-  openRewards('兑换成功', `<div class="gift-confirmation">
-    <h3>${gift.name}</h3><p>礼品核销码</p><strong class="gift-code">${code}</strong>
-    <p>剩余 ${formatPoints(availablePoints())} 积分 · ${address}</p><p>${fulfillment}。</p>
-    <div class="search-actions"><button class="secondary" data-action="gift-back">返回兑换馆</button>
-    <button class="secondary" data-action="gift-history">查看兑换记录</button></div></div>`);
+  showGiftHall(false, entry);
 }
 
 function freshPage() {
@@ -1058,15 +1079,6 @@ function showDashboard() {
   dialog.querySelector('.dialog-head button').focus({ preventScroll:true });
 }
 
-function memberProgress() {
-  const points = Math.max(0, availablePoints());
-  const available = gifts.filter(gift => giftStock(gift) > 0).sort((a,b) => a.cost - b.cost);
-  const target = available.find(gift => gift.cost > points);
-  if (!target) return '<p>已达到当前在库好礼的兑换门槛。</p>';
-  return `<label class="member-progress">再攒 ${formatPoints(target.cost - points)} 积分可兑${target.name}
-    <progress value="${points}" max="${target.cost}"></progress></label>`;
-}
-
 function communityPage() {
   const orders = state.orders.map(orderDetails).join('');
   return `<header class="simple-heading community-head">
@@ -1076,10 +1088,13 @@ function communityPage() {
   <section class="panel resident-card">
     <div class="resident-head"><div><h2>业主会籍</h2><p class="muted">${residentAddress.building} · ¥1 = 1 积分</p></div>
       <p class="member-balance">${formatPoints(availablePoints())}<small> 积分</small></p></div>
-    ${memberProgress()}
+    ${nextGiftProgress('member-progress')}
+  </section>
+  <section class="panel redemption-entry">
+    <div class="redemption-heading"><h2>积分礼遇兑换馆</h2><button class="primary" data-action="gift-hall">积分兑换</button></div>
+    ${latestRedemption(state.redemptions[0])}
   </section>
   <section class="panel"><h2 id="orders-title" tabindex="-1">我的订单记录</h2>${orders || '<p class="muted">暂无订单</p>'}</section>
-  <section class="panel redemption-entry"><h2>积分礼遇兑换馆</h2><button class="secondary" data-action="gift-hall">进入兑换馆</button></section>
   <details class="panel owner-tools"><summary>业主工具</summary>
     <div class="invite-actions"><button class="secondary" data-action="pickup-code">我的提货码</button>
       <button class="secondary" data-action="invite">邀请邻居 · ${inviteCode}</button>
