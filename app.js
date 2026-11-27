@@ -25,22 +25,141 @@ function freshImage(photo, label, loading = 'lazy') {
   return `<span class="fresh-media"><span class="fresh-fallback" aria-hidden="true">${label}</span><img data-fresh-image src="./assets/${photo}.jpg" alt="${label}" loading="${loading}" decoding="async"></span>`;
 }
 
+function carouselMarkup(label, slides, options = {}) {
+  return `<div class="photo-carousel" data-carousel role="group" aria-label="${label}">
+    <div class="carousel-track ${options.trackClass || ''}" tabindex="0" aria-label="左右滑动或按方向键查看">
+      ${slides.map((slide, index) => `<div class="carousel-slide" role="group" aria-label="第 ${index + 1} 张，共 ${slides.length} 张">${slide}</div>`).join('')}
+    </div>
+    <div class="carousel-controls">
+      ${options.arrows ? '<button class="secondary carousel-arrow" data-step="-1" aria-label="上一张直采场景">‹</button>' : ''}
+      <div class="carousel-dots" role="group" aria-label="选择图片">
+        ${slides.map((_, index) => `<button class="carousel-dot" data-slide="${index}" aria-label="第 ${index + 1} 张图片" aria-current="${index === 0}"><span></span></button>`).join('')}
+      </div>
+      ${options.arrows ? '<button class="secondary carousel-arrow" data-step="1" aria-label="下一张直采场景">›</button>' : ''}
+      <button class="carousel-toggle" data-carousel-toggle aria-label="暂停自动轮播">暂停</button>
+    </div>
+  </div>`;
+}
+
 function marketCarousel() {
+  const slides = marketScenes.map(scene => `<article class="market-slide">
+    ${freshImage(scene.photo, scene.title, 'eager')}
+    <div class="market-caption"><p><time>${scene.time}</time><span>质检签名 · ${scene.inspector}</span></p>
+      <h3>${scene.title}</h3><small>${scene.detail}</small></div>
+  </article>`);
   return `<section class="market-carousel" aria-labelledby="market-title">
     <div class="section-head"><div><h2 id="market-title">今日早 5:30 批发市场直采</h2><p>模拟溯源画面 · 左右滑动查看</p></div></div>
-    <div class="market-track" tabindex="0" aria-label="直采场景，左右滑动浏览">
-      ${marketScenes.map(scene => `<article class="market-slide">
-        ${freshImage(scene.photo, scene.title, 'eager')}
-        <div class="market-caption"><p><time>${scene.time}</time><span>质检签名 · ${scene.inspector}</span></p>
-          <h3>${scene.title}</h3><small>${scene.detail}</small></div>
-      </article>`).join('')}
-    </div>
-    <div class="market-nav" aria-label="轮播控制">
-      <button class="secondary" data-action="market-prev" aria-label="上一张直采场景">‹</button>
-      <span>三段直采流程</span>
-      <button class="secondary" data-action="market-next" aria-label="下一张直采场景">›</button>
-    </div>
+    ${carouselMarkup('批发市场直采场景', slides, { trackClass:'market-track', arrows:true })}
   </section>`;
+}
+
+const carouselControllers = new Map();
+const carouselInterval = 3000;
+
+function startCarousel(root) {
+  const track = root.querySelector('.carousel-track');
+  const count = track.children.length;
+  const dots = [...root.querySelectorAll('[data-slide]')];
+  const toggle = root.querySelector('[data-carousel-toggle]');
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  const events = new AbortController();
+  const clone = track.firstElementChild.cloneNode(true);
+  clone.setAttribute('aria-hidden', 'true');
+  track.append(clone);
+  let paused = motion.matches;
+  let touching = false;
+  let timer;
+  let settling;
+  const visible = () => !document.hidden && (dialog.open === dialog.contains(root));
+  const page = () => Math.min(count, Math.round(track.scrollLeft / (track.clientWidth || 1)));
+
+  function move(index, smooth = true) {
+    track.scrollTo({ left:index * track.clientWidth, behavior:smooth && !motion.matches ? 'smooth' : 'instant' });
+  }
+
+  function schedule() {
+    clearTimeout(timer);
+    if (paused || touching || !visible()) return;
+    timer = setTimeout(() => {
+      if (!visible() || touching) return;
+      const current = page();
+      if (current === count) move(0, false);
+      else move(current + 1);
+      schedule();
+    }, carouselInterval);
+  }
+
+  function paint() {
+    for (const [index, dot] of dots.entries()) dot.setAttribute('aria-current', String(index === page() % count));
+  }
+
+  function updateToggle() {
+    toggle.textContent = paused ? '播放' : '暂停';
+    toggle.setAttribute('aria-label', paused ? '播放自动轮播' : '暂停自动轮播');
+    schedule();
+  }
+
+  const listen = (element, name, handler) => element.addEventListener(name, handler, { signal:events.signal, passive:name !== 'keydown' });
+  listen(track, 'scroll', () => {
+    paint();
+    clearTimeout(settling);
+    settling = setTimeout(() => {
+      if (!touching && page() === count) move(0, false);
+    }, 120);
+    schedule();
+  });
+  listen(track, 'touchstart', () => { touching = true; schedule(); });
+  const release = event => {
+    if (event.touches.length) return;
+    touching = false;
+    if (page() === count) move(0, false);
+    schedule();
+  };
+  listen(track, 'touchend', release);
+  listen(track, 'touchcancel', release);
+  listen(track, 'keydown', event => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const step = event.key === 'ArrowRight' ? 1 : -1;
+    move((page() % count + step + count) % count);
+    schedule();
+  });
+  listen(root, 'click', event => {
+    const button = event.target.closest('button');
+    if (!button) return;
+    if (button === toggle) { paused = !paused; updateToggle(); return; }
+    if (button.hasAttribute('data-slide')) move(Number(button.dataset.slide));
+    else if (button.hasAttribute('data-step')) {
+      const current = page() % count;
+      const step = Number(button.dataset.step);
+      move(step > 0 ? current + 1 : (current - 1 + count) % count);
+    } else return;
+    schedule();
+  });
+  listen(document, 'visibilitychange', schedule);
+  listen(motion, 'change', event => { paused = event.matches; updateToggle(); });
+  updateToggle();
+  return {
+    schedule,
+    stop() {
+      events.abort();
+      clearTimeout(timer);
+      clearTimeout(settling);
+    },
+  };
+}
+
+function syncCarousels() {
+  for (const [root, controller] of carouselControllers) {
+    if (!root.isConnected || (dialog.contains(root) && !dialog.open)) {
+      controller.stop();
+      carouselControllers.delete(root);
+    } else controller.schedule();
+  }
+  for (const root of document.querySelectorAll('[data-carousel]')) {
+    if (dialog.contains(root) && !dialog.open) continue;
+    if (!carouselControllers.has(root)) carouselControllers.set(root, startCarousel(root));
+  }
 }
 
 function groupTiers(item) {
@@ -49,19 +168,17 @@ function groupTiers(item) {
     `<div class="tier ${index === level ? 'unlocked' : ''}"><span>满 ${thresholds[index]} 份</span><strong>¥${price/100}</strong><small>${index === level ? '当前团价' : index < level ? '已达标' : '待解锁'}</small></div>`).join('')}</div>`;
 }
 
-function freshGallery(item, view) {
-  const views = { photo:['外观图',item.photo], cut:['切面图',item.id + '-cut'], scale:['称重图',item.id + '-scale'] };
-  const [label, photo] = views[view];
-  return `${freshImage(photo, item.name + ' · ' + label, 'eager')}
-    <div class="service-filters" role="group" aria-label="商品图片">
-      ${Object.entries(views).map(([key,[name]]) => `<button class="service-filter" data-action="fresh-view" data-id="${key}" aria-pressed="${key === view}">${name}</button>`).join('')}
-    </div>`;
+function freshGallery(item) {
+  const images = [['外观全貌',item.photo], ['细节特写',item.id + '-cut'], ['现场去皮称重',item.id + '-scale']];
+  return carouselMarkup(item.name + '商品图片', images.map(([label,photo], index) => `
+    ${freshImage(photo, item.name + ' · ' + label, 'eager')}
+    <span class="carousel-caption">${index + 1}/${images.length} · ${label}</span>`));
 }
 
 function showFreshDetail(item, fromSearch = false) {
   openInfo(item.name, `<div class="search-detail fresh-detail">
     ${fromSearch ? '<button class="secondary" data-action="search-back">返回搜索结果</button>' : ''}
-    <div class="fresh-gallery" data-item="${item.id}">${freshGallery(item, 'photo')}</div>
+    <div class="fresh-gallery">${freshGallery(item)}</div>
     <p class="search-price">${searchPrice(item)}</p>
     <p>${item.detail} · 已拼 ${joined(item)}/${limit} 份</p>
     <section><h3>生鲜详情与溯源</h3><p>${item.origin}</p><p>储藏建议：${item.storage}</p><p>图片为商品示意，档口和质检数据为演示。</p></section>
@@ -392,6 +509,7 @@ function openInfo(title, content) {
   dialogContent.innerHTML = `<header class="dialog-head"><h2 id="dialog-title">${title}</h2>
     <button class="icon-button" data-action="close" aria-label="关闭">×</button></header>${content}`;
   if (!dialog.open) dialog.showModal();
+  syncCarousels();
 }
 
 const preview = [
@@ -1101,6 +1219,7 @@ function render() {
   refreshBag();
   refreshGroups();
   drawIcons();
+  syncCarousels();
 }
 
 function cartTotal(lines = cartLines()) {
@@ -1141,6 +1260,7 @@ function showBag(focusAction, focusId) {
     <div class="row"><strong>合计 <span data-order-total>${money(subtotal + deliveryOptions[delivery].fee)}</span></strong><button class="primary" data-action="checkout" ${blocker ? 'disabled' : ''}>提交演示订单</button></div>`
     : '<p class="muted">购物袋是空的</p>'}`;
   if (!dialog.open) dialog.showModal();
+  syncCarousels();
   if (focusAction) {
     const button = dialog.querySelector(`[data-action="${focusAction}"][data-id="${focusId}"]`);
     (button || dialog.querySelector('[data-action="close"]')).focus();
@@ -1245,6 +1365,7 @@ dialog.addEventListener('submit', event => {
 });
 
 dialog.addEventListener('close', () => {
+  syncCarousels();
   stopPreview();
   clearClaimPhoto();
 });
@@ -1284,17 +1405,6 @@ document.addEventListener('click', event => {
   }
   const { action, id } = button.dataset;
   switch (action) {
-    case 'market-prev': case 'market-next': {
-      const track = main.querySelector('.market-track');
-      const slides = [...track.children];
-      const first = slides[0].offsetLeft;
-      const distance = slide => Math.abs(slide.offsetLeft - first - track.scrollLeft);
-      const current = slides.reduce((closest, slide, index) => distance(slide) < distance(slides[closest]) ? index : closest, 0);
-      const step = action === 'market-next' ? 1 : -1;
-      const next = (current + step + slides.length) % slides.length;
-      track.scrollTo({ left:slides[next].offsetLeft - first, behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-      break;
-    }
     case 'fresh-category':
       if (!Object.hasOwn(freshCategories, id) || id === freshCategory) break;
       freshCategory = id;
@@ -1308,13 +1418,6 @@ document.addEventListener('click', event => {
     case 'fresh-detail': {
       const item = direct.find(product => product.id === id);
       if (item) showFreshDetail(item);
-      break;
-    }
-    case 'fresh-view': {
-      const gallery = dialog.querySelector('.fresh-gallery');
-      const item = direct.find(product => product.id === gallery.dataset.item);
-      gallery.innerHTML = freshGallery(item, id);
-      gallery.querySelector('[aria-pressed="true"]').focus({ preventScroll:true });
       break;
     }
     case 'gift-hall': showGiftHall(true); break;

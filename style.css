@@ -232,7 +232,6 @@ dialog:has(.rewards-content){inset:auto 0 0;width:min(100%,600px);max-height:cal
 .market-carousel{margin:14px 0 10px}
 .market-carousel .section-head{margin:0 0 9px}
 .market-carousel h2{font-size:19px}
-.market-track{display:flex;position:relative;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin;border-radius:17px}
 .market-slide{display:grid;flex:0 0 100%;min-width:0;overflow:hidden;scroll-snap-align:start;position:relative;background:#214c36;color:#fff;border-radius:17px}
 .fresh-media{display:grid;position:relative;overflow:hidden;isolation:isolate;min-width:0;aspect-ratio:16/10;background:linear-gradient(135deg,#cbdcc4,#fbe3b7 70%,#f7b88c);color:#234d36;border-radius:inherit}
 .fresh-fallback,.fresh-media img{grid-area:1/1;width:100%;height:100%;min-height:0}
@@ -244,8 +243,6 @@ dialog:has(.rewards-content){inset:auto 0 0;width:min(100%,600px);max-height:cal
 .market-caption p span,.market-caption time{border-radius:20px;padding:3px 7px;background:#fff1d5;color:#493014}
 .market-caption h3{font-size:19px;margin:4px 0 0}
 .market-caption small{font-size:13px}
-.market-nav{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:4px}
-.market-nav button{min-width:44px;font-size:23px;line-height:1}
 .fresh-filters{margin-bottom:10px}
 .fresh-photo{display:block;width:100%;padding:0;border-radius:13px;margin-bottom:10px}
 .fresh-photo .fresh-media{aspect-ratio:16/8}
@@ -253,7 +250,6 @@ dialog:has(.rewards-content){inset:auto 0 0;width:min(100%,600px);max-height:cal
 .quality-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
 .quality-tags span{border-radius:20px;padding:4px 8px;background:#edf4e9;color:var(--green);font-size:12px;font-weight:750}
 .fresh-gallery .fresh-media{border-radius:13px;aspect-ratio:16/9}
-.fresh-gallery .service-filters{margin:7px 0 0}
 .gift-goal{margin-top:8px;padding:9px 10px;border:1px solid #e6d6b8;border-radius:11px;background:#fff5e2;color:#553713;font-size:14px}
 .gift-goal progress{display:block;width:100%;height:8px;margin-top:6px;accent-color:var(--green)}
 
@@ -280,3 +276,21 @@ dialog:has(.ops-detail){inset:auto 0 0;width:min(100%,600px);max-height:calc(100
 .ops-detail{display:grid;gap:7px}
 .ops-detail>button{justify-self:start}
 .ops-detail section{border-top:1px solid var(--line);padding-top:8px}
+
+/* Native swipe carousels */
+.photo-carousel{min-width:0}
+.carousel-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;border-radius:15px}
+.carousel-track::-webkit-scrollbar{display:none}
+.carousel-slide{position:relative;flex:0 0 100%;min-width:0;scroll-snap-align:start}
+.carousel-caption{position:absolute;right:8px;bottom:8px;padding:4px 8px;border-radius:20px;background:#182d24c9;color:#fff;font-size:12px;font-weight:750;pointer-events:none}
+.carousel-controls{position:relative;display:flex;align-items:center;justify-content:center;min-height:44px;gap:4px;padding-inline:44px}
+.carousel-arrow,.carousel-toggle{min-width:44px;min-height:44px}
+.carousel-arrow{padding:0;font-size:22px}
+.carousel-controls .carousel-arrow{position:absolute;left:0}
+.carousel-dots + .carousel-arrow{left:auto;right:42px}
+.carousel-toggle{position:absolute;right:0;font-size:12px;color:var(--green)}
+.carousel-dots{display:flex;align-items:center}
+.carousel-dot{display:grid;place-items:center;width:28px;height:44px;padding:0}
+.carousel-dot span{width:7px;height:7px;border-radius:8px;background:#a6b6a7;transition:width .2s ease}
+.carousel-dot[aria-current=true] span{width:19px;background:var(--green)}
+@media(prefers-reduced-motion:reduce){.carousel-dot span{transition:none}}
