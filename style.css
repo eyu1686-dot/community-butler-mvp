@@ -227,3 +227,30 @@ dialog:has(.rewards-content){inset:auto 0 0;width:min(100%,600px);max-height:cal
 .gift-card button{font-size:13px;padding-inline:4px}
 .gift-confirmation{display:grid;gap:8px}
 .gift-code{font-size:22px;overflow-wrap:anywhere}
+
+/* Fresh sourcing and produce photography */
+.market-carousel{margin:14px 0 10px}
+.market-carousel .section-head{margin:0 0 9px}
+.market-carousel h2{font-size:19px}
+.market-track{display:flex;position:relative;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin;border-radius:17px}
+.market-slide{display:grid;flex:0 0 100%;min-width:0;overflow:hidden;scroll-snap-align:start;position:relative;background:#214c36;color:#fff;border-radius:17px}
+.fresh-media{display:grid;position:relative;overflow:hidden;isolation:isolate;min-width:0;aspect-ratio:16/10;background:linear-gradient(135deg,#cbdcc4,#fbe3b7 70%,#f7b88c);color:#234d36;border-radius:inherit}
+.fresh-fallback,.fresh-media img{grid-area:1/1;width:100%;height:100%;min-height:0}
+.fresh-fallback{display:grid;place-items:center;text-align:center;padding:12px;font-weight:750}
+.fresh-media img{position:absolute;inset:0;object-fit:cover}
+.market-slide .fresh-media{border-radius:0;aspect-ratio:16/10}
+.market-caption{align-self:end;position:absolute;inset:auto 0 0;padding:30px 13px 11px;background:linear-gradient(transparent,#192e24e8 58%,#192e24)}
+.market-caption p{display:flex;flex-wrap:wrap;gap:7px;align-items:center;font-size:12px}
+.market-caption p span,.market-caption time{border-radius:20px;padding:3px 7px;background:#fff1d5;color:#493014}
+.market-caption h3{font-size:19px;margin:4px 0 0}
+.market-caption small{font-size:13px}
+.market-nav{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:4px}
+.market-nav button{min-width:44px;font-size:23px;line-height:1}
+.fresh-filters{margin-bottom:10px}
+.fresh-photo{display:block;width:100%;padding:0;border-radius:13px;margin-bottom:10px}
+.fresh-photo .fresh-media{aspect-ratio:16/8}
+.fresh-title{font-weight:800;text-align:left;padding:0;color:var(--green)}
+.quality-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.quality-tags span{border-radius:20px;padding:4px 8px;background:#edf4e9;color:var(--green);font-size:12px;font-weight:750}
+.fresh-gallery .fresh-media{border-radius:13px;aspect-ratio:16/9}
+.fresh-gallery .service-filters{margin:7px 0 0}

@@ -1,4 +1,4 @@
-const cacheName = 'community-butler-v7';
+const cacheName = 'community-butler-v8';
 const prefix = 'community-butler-';
 const localFiles = [
   './', './index.html', './style.css', './app.js', './manifest.json',
@@ -6,6 +6,12 @@ const localFiles = [
   './assets/market.jpg', './assets/strawberries.jpg', './assets/tomatoes.jpg',
   './assets/greens.jpg', './assets/bread.jpg',
   './assets/pickup-qr.png', './assets/berry-damage.jpg', './assets/sorting.jpg', './assets/shrimp.jpg', './assets/cherries.jpg', './assets/fish.jpg',
+  './assets/eggs.jpg', './assets/pumpkin.jpg', './assets/scene-check.jpg',
+  './assets/scene-scale.jpg', './assets/scene-ice.jpg', './assets/dandong-cut.jpg',
+  './assets/dandong-scale.jpg', './assets/chile-cut.jpg', './assets/chile-scale.jpg',
+  './assets/tiger-cut.jpg', './assets/tiger-scale.jpg', './assets/hairtail-cut.jpg',
+  './assets/hairtail-scale.jpg', './assets/eggs-cut.jpg', './assets/eggs-scale.jpg',
+  './assets/pumpkin-cut.jpg', './assets/pumpkin-scale.jpg',
 ];
 const urls = new Set(localFiles.map(path => new URL(path, self.registration.scope).href));
 

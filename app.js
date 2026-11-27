@@ -1,9 +1,78 @@
 const direct = [
-  { id:'dandong', name:'丹东红颜草莓', detail:'500 g / 盒', photo:'strawberries', base:42, tiers:[6800,5900,4900] },
-  { id:'tiger', name:'现捞冰鲜黑虎虾', detail:'400 g / 份', photo:'shrimp', base:29, tiers:[7900,6900,5900] },
-  { id:'chile', name:'智利车厘子 3J', detail:'500 g / 盒', photo:'cherries', base:9, tiers:[8900,7900,6900] },
-  { id:'hairtail', name:'舟山带鱼段', detail:'500 g / 份', photo:'fish', base:24, tiers:[3900,3500,2900] },
+  { id:'dandong', name:'丹东红颜草莓', detail:'500 g / 盒', photo:'strawberries', base:42, tiers:[6800,5900,4900], category:'fruit',
+    quality:['甜度实测 ≥ 14°','单果 25g+'], origin:'辽宁丹东 · 早市鲜果 A06 档', storage:'冷藏 0–4°C，食用前再洗，建议 2 日内吃完。', review:'3栋李姐：草莓颗颗饱满，孩子一次吃半盒。' },
+  { id:'tiger', name:'现捞冰鲜黑虎虾', detail:'400 g / 份', photo:'shrimp', base:29, tiers:[7900,6900,5900], category:'seafood',
+    quality:['足斤足两去冰重','全程冰鲜'], origin:'广东湛江 · 早市海鲜 B03 档', storage:'收货后冷藏，当天煮熟食用；不能当天吃可密封冷冻。', review:'6栋刘叔：复秤去冰重，回家一煮肉质很紧实。' },
+  { id:'chile', name:'智利车厘子 3J', detail:'500 g / 盒', photo:'cherries', base:9, tiers:[8900,7900,6900], category:'fruit',
+    quality:['3J 大果规格','逐盒挑检'], origin:'智利中部产区 · 早市进口果 A12 档', storage:'保持干燥冷藏，食用前冲洗。', review:'2栋张姐：果柄青绿，果肉脆甜。' },
+  { id:'hairtail', name:'舟山带鱼段', detail:'500 g / 份', photo:'fish', base:24, tiers:[3900,3500,2900], category:'seafood',
+    quality:['净重 500 g','分段净切'], origin:'浙江舟山 · 早市海鲜 B07 档', storage:'密封冷藏，当天烧制；暂不食用请冷冻。', review:'5栋吴姨：鱼段切得整齐，红烧省了不少工。' },
+  { id:'eggs', name:'农家散养土鸡蛋 30 枚', detail:'30 枚 / 盒', photo:'eggs', base:34, tiers:[4900,4500,3900], category:'pantry',
+    quality:['逐枚查裂','当天装盒'], origin:'安徽宣城 · 早市粮蛋 C02 档', storage:'原盒冷藏，生熟分开，充分加热后食用。', review:'1栋何姐：到手每颗都完整，正好够一家人吃几天。' },
+  { id:'pumpkin', name:'有机贝贝南瓜', detail:'约 1 kg / 份', photo:'pumpkin', base:19, tiers:[2900,2400,1990], category:'vegetable',
+    quality:['农残检测合格','粉糯小果'], origin:'山东寿光 · 早市有机蔬菜 D05 档', storage:'完整果放阴凉处，切开后密封冷藏并尽快食用。', review:'3栋周姐：蒸熟很粉糯，孩子用勺挖着吃。' },
 ];
+const freshCategories = { all:'全部爆品', fruit:'时令鲜果', seafood:'现捞海鲜', vegetable:'有机蔬菜', pantry:'粮油蛋奶' };
+let freshCategory = 'all';
+
+const marketScenes = [
+  { photo:'scene-check', title:'开箱验货挑果', time:'05:30', inspector:'李管家', detail:'开箱检查成熟度与表皮，挑除压伤软果。' },
+  { photo:'scene-scale', title:'现场复秤去皮重', time:'05:37', inspector:'周管家', detail:'秤归零后去皮重，分别记录商品净重。' },
+  { photo:'scene-ice', title:'冷链泡沫箱加冰直发', time:'05:45', inspector:'陈管家', detail:'装箱前补冰并封箱，送往小区自提点。' },
+];
+
+function freshImage(photo, label, loading = 'lazy') {
+  return `<span class="fresh-media"><span class="fresh-fallback" aria-hidden="true">${label}</span><img data-fresh-image src="./assets/${photo}.jpg" alt="${label}" loading="${loading}" decoding="async"></span>`;
+}
+
+function marketCarousel() {
+  return `<section class="market-carousel" aria-labelledby="market-title">
+    <div class="section-head"><div><h2 id="market-title">今日早 5:30 批发市场直采</h2><p>模拟溯源画面 · 左右滑动查看</p></div></div>
+    <div class="market-track" tabindex="0" aria-label="直采场景，左右滑动浏览">
+      ${marketScenes.map(scene => `<article class="market-slide">
+        ${freshImage(scene.photo, scene.title, 'eager')}
+        <div class="market-caption"><p><time>${scene.time}</time><span>质检签名 · ${scene.inspector}</span></p>
+          <h3>${scene.title}</h3><small>${scene.detail}</small></div>
+      </article>`).join('')}
+    </div>
+    <div class="market-nav" aria-label="轮播控制">
+      <button class="secondary" data-action="market-prev" aria-label="上一张直采场景">‹</button>
+      <span>三段直采流程</span>
+      <button class="secondary" data-action="market-next" aria-label="下一张直采场景">›</button>
+    </div>
+  </section>`;
+}
+
+function groupTiers(item) {
+  const level = tier(item);
+  return `<div class="tiers" aria-label="阶梯拼团价">${item.tiers.map((price,index) =>
+    `<div class="tier ${index === level ? 'unlocked' : ''}"><span>满 ${thresholds[index]} 份</span><strong>¥${price/100}</strong><small>${index === level ? '当前团价' : index < level ? '已达标' : '待解锁'}</small></div>`).join('')}</div>`;
+}
+
+function freshGallery(item, view) {
+  const views = { photo:['外观图',item.photo], cut:['切面图',item.id + '-cut'], scale:['称重图',item.id + '-scale'] };
+  const [label, photo] = views[view];
+  return `${freshImage(photo, item.name + ' · ' + label, 'eager')}
+    <div class="service-filters" role="group" aria-label="商品图片">
+      ${Object.entries(views).map(([key,[name]]) => `<button class="service-filter" data-action="fresh-view" data-id="${key}" aria-pressed="${key === view}">${name}</button>`).join('')}
+    </div>`;
+}
+
+function showFreshDetail(item, fromSearch = false) {
+  openInfo(item.name, `<div class="search-detail fresh-detail">
+    ${fromSearch ? '<button class="secondary" data-action="search-back">返回搜索结果</button>' : ''}
+    <div class="fresh-gallery" data-item="${item.id}">${freshGallery(item, 'photo')}</div>
+    <p class="search-price">${searchPrice(item)}</p>
+    <p>${item.detail} · 已拼 ${joined(item)}/${limit} 份</p>
+    <section><h3>生鲜详情与溯源</h3><p>${item.origin}</p><p>储藏建议：${item.storage}</p><p>图片为商品示意，档口和质检数据为演示。</p></section>
+    <section><h3>本小区已购短评 · 演示</h3><p>“${item.review}”</p></section>
+    <section><h3>阶梯拼团价</h3>${groupTiers(item)}<p>北京时间 22:00 截单，按提交时解锁的价格结算。</p></section>
+    ${searchAction(item)}
+  </div>`);
+  dialog.scrollTop = 0;
+  dialog.querySelector('.dialog-head button').focus({ preventScroll:true });
+}
+
 const thresholds = [10,30,50];
 const limit = thresholds.at(-1);
 const deliveryOptions = {
@@ -246,6 +315,7 @@ function freshPage() {
       <button class="primary" data-action="browse">查看限量鲜货</button>
     </div>
   </section>
+  ${marketCarousel()}
   <button class="trace" data-action="trace">
     <span class="trace-play" aria-hidden="true">▶</span>
     <span><strong>今日早 5:30 批发市场直采实拍</strong><small>演示预览 · 看采购、挑拣与复秤</small></span>
@@ -254,14 +324,18 @@ function freshPage() {
     <strong>消费攒积分 · 免费换家电/玩具</strong><small>当前可用 ${formatPoints(availablePoints())} 积分</small></span></button>
   <section id="catalog" aria-labelledby="catalog-title">
     <div class="section-head"><h2 id="catalog-title" tabindex="-1">每日限量直采</h2><p>每款限 50 份</p></div>
-    <p class="group-note">已拼份数为演示数据。按提交时已解锁的阶梯价结算。</p>
-    <div class="group-products">${direct.map(item => `<article class="group-product" data-product="${item.id}">
-      <div class="group-summary"><img src="./assets/${item.photo}.jpg" alt="" width="104" height="90">
-        <div><h3>${item.name}</h3><p class="muted">${item.detail}</p>
+    <p class="group-note">品质标签与已拼份数为演示数据。按提交时已解锁的阶梯价结算。</p>
+    <div class="service-filters fresh-filters" role="group" aria-label="生鲜分类">${Object.entries(freshCategories).map(([id,label]) =>
+      `<button class="service-filter" data-action="fresh-category" data-id="${id}" aria-pressed="${id === freshCategory}">${label}</button>`).join('')}</div>
+    <div class="group-products">${direct.map(item => `<article class="group-product" data-product="${item.id}" ${freshCategory === 'all' || item.category === freshCategory ? '' : 'hidden'}>
+      <button class="fresh-photo" data-action="fresh-detail" data-id="${item.id}" aria-label="查看生鲜详情 · ${item.name}">${freshImage(item.photo, item.name)}</button>
+      <div class="group-summary">
+        <div><h3><button class="fresh-title" data-action="fresh-detail" data-id="${item.id}">${item.name}</button></h3><p class="muted">${item.detail}</p>
           <strong class="price" data-group-price></strong><small data-price-label></small></div></div>
+      <div class="quality-tags">${item.quality.map(label => `<span>${label}</span>`).join('')}</div>
       <p class="cutoff" data-cutoff></p>
       <label class="progress-label"><span data-joined></span><progress max="${limit}"></progress></label>
-      <div class="tiers" aria-label="阶梯拼团价">${item.tiers.map((price,index) => `<div class="tier"><span>满 ${thresholds[index]} 份</span><strong>¥${price/100}</strong><small data-tier-status></small></div>`).join('')}</div>
+      ${groupTiers(item)}
       <button class="primary join" data-action="add" data-id="${item.id}"></button>
     </article>`).join('')}</div>
   </section>`;
@@ -365,6 +439,8 @@ const searchAliases = {
   tiger:'黑虎虾 鲜虾 海鲜 生鲜',
   chile:'车厘子 樱桃 水果 生鲜',
   hairtail:'带鱼 海鲜 生鲜',
+  eggs:'鸡蛋 土鸡蛋 蛋奶 粮油 生鲜',
+  pumpkin:'贝贝南瓜 有机蔬菜 青菜 生鲜',
 };
 const searchEndorsements = {
   parcel:'赵阿姨 · 本小区已服务 46 户',
@@ -430,16 +506,15 @@ function showSearch(remember = false) {
 function showSearchDetail(id) {
   const item = searchEntries.find(entry => entry.id === id);
   if (!item) return;
-  const details = item.tiers
-    ? `<p>${item.detail} · 已拼 ${joined(item)}/${limit} 份</p><p>${thresholds.map((count, index) => `满 ${count} 份 ${servicePrice(item.tiers[index])}`).join(' · ')}</p><p>北京时间 22:00 截单，按提交时解锁的价格结算。</p>`
-    : `<p>${item.scope}</p>`;
-  const review = item.tiers ? '“自提时能看到到货状态，份量写得清楚。”' : '“预约前就能看到收费明细，上门后按约定做完。”';
+  if (item.tiers) return showFreshDetail(item, true);
+  const details = `<p>${item.scope}</p>`;
+  const review = '“预约前就能看到收费明细，上门后按约定做完。”';
   openInfo(item.name, `<div class="search-detail">
     <button class="secondary" data-action="search-back">返回搜索结果</button>
     <p class="search-price">${searchPrice(item)}</p>
     <p class="search-endorsement">管家实测背书（演示） · ${searchEndorsement(item)}</p>
     <section><h3>服务明细</h3>${details}</section>
-    <section><h3>零加价承诺</h3><p>${item.tiers ? '份量、阶梯价及配送费用均在下单前明示。' : '按已确认的服务与价格结算。额外材料或工时先说明并经住户同意。'}</p></section>
+    <section><h3>零加价承诺</h3><p>按已确认的服务与价格结算。额外材料或工时先说明并经住户同意。</p></section>
     <section><h3>用户评价 · 演示</h3><p>${review}</p></section>
     ${searchAction(item)}
   </div>`);
@@ -961,6 +1036,10 @@ dialog.addEventListener('change', event => {
   dialog.querySelector('[data-points-estimate]').textContent = `本单预计可获 +${formatPoints(pointsFor(total))} 积分`;
 });
 
+document.addEventListener('error', event => {
+  if (event.target.matches?.('[data-fresh-image]')) event.target.hidden = true;
+}, true);
+
 document.addEventListener('click', event => {
   const button = event.target.closest('button[data-action]');
   if (!button) {
@@ -970,6 +1049,39 @@ document.addEventListener('click', event => {
   }
   const { action, id } = button.dataset;
   switch (action) {
+    case 'market-prev': case 'market-next': {
+      const track = main.querySelector('.market-track');
+      const slides = [...track.children];
+      const first = slides[0].offsetLeft;
+      const distance = slide => Math.abs(slide.offsetLeft - first - track.scrollLeft);
+      const current = slides.reduce((closest, slide, index) => distance(slide) < distance(slides[closest]) ? index : closest, 0);
+      const step = action === 'market-next' ? 1 : -1;
+      const next = (current + step + slides.length) % slides.length;
+      track.scrollTo({ left:slides[next].offsetLeft - first, behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+      break;
+    }
+    case 'fresh-category':
+      if (!Object.hasOwn(freshCategories, id) || id === freshCategory) break;
+      freshCategory = id;
+      main.querySelector('.fresh-filters [aria-pressed="true"]').setAttribute('aria-pressed', 'false');
+      button.setAttribute('aria-pressed', 'true');
+      for (const card of main.querySelectorAll('[data-product]')) {
+        const item = direct.find(product => product.id === card.dataset.product);
+        card.hidden = id !== 'all' && item.category !== id;
+      }
+      break;
+    case 'fresh-detail': {
+      const item = direct.find(product => product.id === id);
+      if (item) showFreshDetail(item);
+      break;
+    }
+    case 'fresh-view': {
+      const gallery = dialog.querySelector('.fresh-gallery');
+      const item = direct.find(product => product.id === gallery.dataset.item);
+      gallery.innerHTML = freshGallery(item, id);
+      gallery.querySelector('[aria-pressed="true"]').focus({ preventScroll:true });
+      break;
+    }
     case 'gift-hall': showGiftHall(true); break;
     case 'gift-back': showGiftHall(); break;
     case 'gift-category':
