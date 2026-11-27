@@ -1,11 +1,11 @@
-const cacheName = 'community-butler-v9';
+const cacheName = 'community-butler-v10';
 const prefix = 'community-butler-';
 const localFiles = [
   './', './index.html', './style.css', './app.js', './manifest.json',
   './assets/icon-180.png', './assets/icon-192.png', './assets/icon-512.png',
   './assets/market.jpg', './assets/strawberries.jpg', './assets/tomatoes.jpg',
   './assets/greens.jpg', './assets/bread.jpg',
-  './assets/pickup-qr.png', './assets/berry-damage.jpg', './assets/sorting.jpg', './assets/shrimp.jpg', './assets/cherries.jpg', './assets/fish.jpg',
+  './assets/pickup-qr.png', './assets/faucet-evidence.jpg', './assets/berry-damage.jpg', './assets/sorting.jpg', './assets/shrimp.jpg', './assets/cherries.jpg', './assets/fish.jpg',
   './assets/eggs.jpg', './assets/pumpkin.jpg', './assets/scene-check.jpg',
   './assets/scene-scale.jpg', './assets/scene-ice.jpg', './assets/dandong-cut.jpg',
   './assets/dandong-scale.jpg', './assets/chile-cut.jpg', './assets/chile-scale.jpg',

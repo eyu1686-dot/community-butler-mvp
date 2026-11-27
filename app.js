@@ -653,6 +653,99 @@ function claimResult(claim) {
     : '已自动通过！下次随单免费补发，无需退回商品';
 }
 
+const sampleCases = [
+  { id:'SH-20261124-001', customer:'li', owner:'3栋2单元 李女士', name:'丹东红颜草莓', issue:'个别草莓运输轻微软磕', image:demoDamage, method:'refund', amount:1280, at:Date.parse('2026-11-24T17:42:00+08:00'), duration:80000, note:'李管家：核验果盒与压伤照片，按受损比例退款。', penalty:2 },
+  { id:'SH-20261123-002', customer:'wang', owner:'5栋 王先生', name:'现捞冰鲜黑虎虾', issue:'去冰后复秤，净重与标示有差额', image:'./assets/tiger-scale.jpg', method:'replacement', amount:0, at:Date.parse('2026-11-23T18:06:00+08:00'), duration:105000, note:'周管家：已登记差额，下次生鲜订单随单补足。', penalty:1 },
+  { id:'SH-20261122-003', customer:'chen', owner:'2栋 陈女士', name:'更换水龙头/软管', issue:'更换后接口仍有轻微渗水', image:'./assets/faucet-evidence.jpg', method:'refund', amount:600, at:Date.parse('2026-11-22T15:20:00+08:00'), duration:156000, note:'陈管家：复核服务记录，退回部分工时费并通知师傅复查。', penalty:2 },
+];
+let caseTab = 'public';
+const formatCaseTime = at => new Date(at).toLocaleString('zh-CN', {
+  timeZone:'Asia/Shanghai', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit',
+});
+
+function ownCases() {
+  return state.orders.filter(order => order.claim).map(order => {
+    const claim = order.claim;
+    return {
+      id:claim.id || 'SH-' + order.id, customer:'li', owner:'3栋2单元 李女士',
+      name:order.items.map(item => item.name).join('、'), issue:claim.issue,
+      reason:claim.reason, image:claim.image, method:claim.method, amount:claim.amount,
+      at:claim.at, duration:claim.duration, pending:Boolean(claim.reviewUntil),
+      note:claim.method === 'refund' ? '管家已核验订单及凭证，按演示规则原路退款。' : '管家已核验订单及凭证，安排下次随单补发。',
+      penalty:2, local:true,
+    };
+  }).reverse().sort((a, b) => (b.at || 0) - (a.at || 0));
+}
+
+function visibleCases(isPublic) {
+  const own = ownCases();
+  if (!isPublic) return own;
+  return [...own.map(record => ({
+    ...record, image:record.image === demoDamage ? demoDamage : '', reason:'',
+    note:'管家已按公示规则处理，住户上传照片和备注仅本人可见。',
+  })), ...sampleCases];
+}
+
+function caseResult(record) {
+  if (record.pending) return '管家审核中';
+  return record.method === 'refund' ? `秒退 ${money(record.amount)} · 无需退货` : '随单免费补发 · 无需退货';
+}
+
+function caseDuration(record) {
+  if (record.pending) return '等待办结';
+  if (!record.duration) return '旧记录 · 未记录耗时';
+  const seconds = record.duration / 1000;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes ? minutes + '分' : ''}${seconds % 60}秒办结`;
+}
+
+function caseEvidence(record, large = false) {
+  const image = record.image;
+  const safe = image === demoDamage || (!record.local && image) ||
+    /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image || '');
+  return safe ? `<img class="case-evidence ${large ? 'case-evidence-large' : ''}" src="${escapeHtml(image)}" alt="售后凭证" loading="lazy">`
+    : '<span class="case-evidence-placeholder">凭证未公开或未保存</span>';
+}
+
+function caseCard(record, isPublic = false, fromCustomer = '') {
+  return `<article class="case-card">
+    <button class="case-card-button" data-action="case-detail" data-id="${escapeHtml(record.id)}" data-public="${isPublic}" data-customer="${fromCustomer}">
+      ${caseEvidence(record)}
+      <span><strong>${escapeHtml(record.name)}</strong><small>${escapeHtml(record.id)} · ${escapeHtml(record.owner)}</small>
+      <small>${escapeHtml(record.reason || record.issue)}</small><strong class="case-result">${caseResult(record)}</strong><small>${caseDuration(record)}</small></span>
+    </button><p class="muted">${escapeHtml(record.pending ? '已收件，正在核验。' : record.note)}</p>
+  </article>`;
+}
+
+function caseList() {
+  const isPublic = caseTab === 'public';
+  return visibleCases(isPublic).map(record => caseCard(record, isPublic)).join('') || '<p class="muted">暂无个人售后记录。</p>';
+}
+
+function showCase(id, isPublic, customer) {
+  const record = [...visibleCases(isPublic), ...sampleCases].find(item => item.id === id);
+  if (!record) return;
+  const end = record.at && record.duration ? record.at + record.duration : null;
+  const final = record.method === 'refund' ? '退款原路到账' : '确认随单补发';
+  const steps = [
+    ['提交凭证', record.at],
+    ['AI / 管家核验', null],
+    [final, end],
+    [`同步扣减供应商考核分（−${record.penalty} 分）`, end],
+  ];
+  openInfo('完整售后详情', `<div class="ops-detail">
+    ${customer ? `<button class="secondary" data-action="customer-detail" data-id="${customer}">返回客户详情</button>` : ''}
+    <h3>${escapeHtml(record.name)}</h3><p class="muted">${escapeHtml(record.id)} · ${escapeHtml(record.owner)}</p>
+    <p>问题原因：${escapeHtml(record.reason || record.issue)}</p>${caseEvidence(record, true)}
+    <p class="case-result">${caseResult(record)} · ${caseDuration(record)}</p>
+    <p class="muted">${escapeHtml(record.pending ? '已收件，正在核验。' : record.note)}</p>
+    <h3>申请时间线 · 演示</h3>
+    <ol class="case-timeline">${steps.map(([label,time], index) => `<li><strong>${label}</strong>
+      <span>${record.pending && index > 0 ? (index === 1 ? '核验中' : '待处理') : time ? formatCaseTime(time) : index === 1 ? '核验通过' : '旧记录未留存时间'}</span></li>`).join('')}</ol>
+  </div>`);
+  dialog.scrollTop = 0;
+}
+
 function servicePage() {
   const orders = state.orders.map(order => {
     const names = order.items.map(item => escapeHtml(item.name)).join('、');
@@ -677,6 +770,14 @@ function servicePage() {
     <p class="muted">选择订单、补充照片，查看模拟审核和赔付结果。</p>
     ${orders}
     ${oldRequests ? `<details class="panel"><summary>历史售后登记</summary><ul>${oldRequests}</ul></details>` : ''}
+  </section>
+  <section class="panel"><h2>售后详情与公示</h2>
+    <div class="service-filters" role="group" aria-label="售后记录分类">
+      <button class="service-filter" data-action="case-tab" data-id="mine" aria-pressed="${caseTab === 'mine'}">我的售后记录</button>
+      <button class="service-filter" data-action="case-tab" data-id="public" aria-pressed="${caseTab === 'public'}">小区售后公示</button>
+    </div>
+    <p class="muted">公示案例为演示。住户上传照片和补充说明仅留在本机个人记录。</p>
+    <div id="case-list">${caseList()}</div>
   </section>
   <section class="panel"><h2>一对一专属管家留言 / 需求许愿池</h2>
     <form id="wish-form">
@@ -706,6 +807,7 @@ function showClaim(id) {
     <p class="muted">${order.items.map(item => escapeHtml(item.name)).join('、')} · ${escapeHtml(order.id)}</p>
     <input type="hidden" name="order" value="${escapeHtml(order.id)}">
     <label class="field">问题类型<select name="issue" required><option value="">选择问题类型</option>${bookingOptions(issueTypes)}</select></label>
+    <label class="field">补充说明（选填）<textarea name="reason" maxlength="160" rows="2"></textarea></label>
     <div class="photo-actions">
       <label class="field">选择本地照片<input type="file" name="photo" accept="image/*"></label>
       <button type="button" class="icon-button" data-action="demo-photo">填入演示破损图</button>
@@ -717,7 +819,7 @@ function showClaim(id) {
       <label class="delivery-option"><input type="radio" name="method" value="replacement" required>下次随单免费补发</label>
     </fieldset>
     <button class="primary service-book" type="submit">提交售后申请</button>
-    <small class="muted">赔付为演示，照片仅在本机预览。</small>
+    <small class="muted">赔付为演示，凭证缩略图仅保存到当前浏览器。</small>
   </form>`);
 }
 
@@ -746,17 +848,49 @@ function completeReviews() {
   if (next.length) claimTimer = setTimeout(completeReviews, Math.max(0, Math.min(...next) - now));
 }
 
-function submitClaim(form) {
-  const { order:id, issue, method } = Object.fromEntries(new FormData(form));
+async function evidenceThumbnail(image) {
+  if (image.getAttribute('src') === demoDamage) return demoDamage;
+  try {
+    await image.decode();
+    const ratio = Math.min(1, 360 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.72);
+  } catch {
+    return '';
+  }
+}
+
+async function submitClaim(form) {
+  const { order:id, issue, method, reason } = Object.fromEntries(new FormData(form));
   const order = state.orders.find(item => item.id === id);
   if (!order || order.claim || !issueTypes.includes(issue) || !['refund','replacement'].includes(method)) return;
   if (form.querySelector('.claim-photo').hidden) {
     form.querySelector('[data-photo-status]').textContent = '请选择本地照片或填入演示破损图。';
     return;
   }
+  const submit = form.querySelector('[type="submit"]');
+  if (submit.disabled) return;
+  submit.disabled = true;
+  const photo = form.querySelector('.claim-photo');
+  const source = photo.src;
+  const image = await evidenceThumbnail(photo);
+  if (!form.isConnected || !dialog.open || order.claim) return;
+  if (photo.hidden || photo.src !== source) { submit.disabled = false; return; }
   const refund = order.demo ? 1280 : Math.round(order.total * 0.2);
-  order.claim = { issue, method, amount:method === 'refund' ? refund : 0, reviewUntil:Date.now() + 1500 };
-  save();
+  const at = Date.now();
+  const duration = 1500;
+  order.claim = { id:'SH-' + order.id, issue, reason:reason.trim(), method, image,
+    amount:method === 'refund' ? refund : 0, at, duration, reviewUntil:at + duration };
+  if (!save()) {
+    delete order.claim;
+    submit.disabled = false;
+    form.querySelector('[data-photo-status]').textContent = '无法保存售后申请，请检查浏览器存储空间。';
+    return;
+  }
+  caseTab = 'mine';
   clearClaimPhoto();
   render();
   openInfo('管家极速审核', `<div class="claim-review" data-review="${escapeHtml(id)}" role="status">
@@ -787,6 +921,85 @@ const buildingReach = [
   ['1 栋',18,100], ['2 栋',22,100], ['3 栋',28,100], ['5 栋',16,100], ['6 栋',25,100],
 ];
 
+const customers = [
+  { id:'li', address:'3栋201', name:'李女士', total:148000, count:14, tags:['生鲜','保洁'], items:['丹东红颜草莓','三居室深度日常保洁','农家散养土鸡蛋 30 枚'], redeemed:100 },
+  { id:'wang', address:'5栋1102', name:'王先生', total:89000, count:9, tags:['海鲜','空调维修'], items:['现捞冰鲜黑虎虾','空调挂机清洗','舟山带鱼段'], redeemed:0 },
+  { id:'chen', address:'2栋602', name:'陈女士', total:96000, count:11, tags:['水电维修','时令鲜果'], items:['更换水龙头/软管','智利车厘子 3J','丹东红颜草莓'], redeemed:100 },
+  { id:'zhou', address:'1栋302', name:'周先生', total:62000, count:6, tags:['粮油蛋奶','海鲜'], items:['农家散养土鸡蛋 30 枚','舟山带鱼段'], redeemed:0 },
+  { id:'xu', address:'6栋401', name:'许女士', total:122000, count:12, tags:['日常保洁','有机蔬菜'], items:['三居室深度日常保洁','有机贝贝南瓜'], redeemed:180 },
+  { id:'zhao', address:'3栋902', name:'赵先生', total:46000, count:7, tags:['跑腿','时令鲜果'], items:['代取驿站快递','丹东红颜草莓','智利车厘子 3J'], redeemed:100 },
+  { id:'liu', address:'5栋702', name:'刘女士', total:75000, count:8, tags:['海鲜','粮油蛋奶'], items:['现捞冰鲜黑虎虾','舟山带鱼段','农家散养土鸡蛋 30 枚'], redeemed:0 },
+];
+const customerMoney = cents => '¥' + (cents / 100).toLocaleString('zh-CN', { minimumFractionDigits:2, maximumFractionDigits:2 });
+let customerQuery = '';
+let customerSort = 'spend';
+let customerClaimsOnly = false;
+
+function customerData(customer) {
+  const local = customer.id === 'li';
+  const orders = local ? state.orders.filter(order => !order.demo) : [];
+  const claims = [...(local ? ownCases() : []), ...sampleCases.filter(record => record.customer === customer.id)];
+  return {
+    ...customer, orders, claims,
+    total:customer.total + orders.reduce((sum, order) => sum + order.total, 0),
+    count:customer.count + orders.length,
+    earned:pointsFor(customer.total) + (local ? state.pointEarnings.reduce((sum, entry) => sum + entry.points, 0) : 0),
+    redeemed:customer.redeemed + (local ? state.redemptions.reduce((sum, entry) => sum + entry.points, 0) : 0),
+  };
+}
+
+function customerList() {
+  const tokens = customerQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const matching = customers.map(customerData).filter(item =>
+    (!customerClaimsOnly || item.claims.length) &&
+    tokens.every(token => (item.address + item.name).toLowerCase().includes(token)));
+  matching.sort((a,b) => customerSort === 'frequency' ? b.count - a.count || b.total - a.total : b.total - a.total || b.count - a.count);
+  return matching.map(item => `<article class="customer-card">
+    <button class="customer-button" data-action="customer-detail" data-id="${item.id}">
+      <strong>${item.address} ${item.name}</strong>
+      <span>累计消费 ${customerMoney(item.total)} · 下单 ${item.count} 次</span>
+      <small>偏好 ${item.tags.join(' / ')} · 售后 ${item.claims.length} 条</small>
+    </button></article>`).join('') || '<p class="muted">暂无匹配客户。</p>';
+}
+
+function customerPanel() {
+  return `<section class="panel"><h2>核心客户明细与消费画像</h2>
+    <p class="muted">演示档案 · 消费按下单金额汇总，当前浏览器订单计入李女士档案。</p>
+    <div class="ops-filters">
+      <label class="field">搜索楼栋/姓名<input id="customer-search" type="search" placeholder="如 3栋、李女士" value="${escapeHtml(customerQuery)}"></label>
+      <label class="field">排序<select id="customer-sort"><option value="spend" ${customerSort === 'spend' ? 'selected' : ''}>消费金额排序</option>
+      <option value="frequency" ${customerSort === 'frequency' ? 'selected' : ''}>复购频次排序</option></select></label>
+    </div>
+    <label class="customer-filter"><input id="customer-claims-only" type="checkbox" ${customerClaimsOnly ? 'checked' : ''}> 有售后记录</label>
+    <div id="customer-list">${customerList()}</div>
+  </section>`;
+}
+
+function showCustomer(id) {
+  const profile = customers.find(customer => customer.id === id);
+  if (!profile) return;
+  const item = customerData(profile);
+  const average = Math.floor(profile.total / profile.count);
+  const history = Array.from({ length:profile.count }, (_, index) => ({
+    id:`DEMO-${id.toUpperCase()}-${String(profile.count - index).padStart(2,'0')}`,
+    total:average + (index === 0 ? profile.total % profile.count : 0),
+    time:`2026-11-${String(24 - index).padStart(2,'0')}`,
+    items:[{ name:profile.items[index % profile.items.length], quantity:1 }],
+  }));
+  openInfo('客户详情', `<div class="ops-detail">
+    <h3>${item.address} ${item.name}</h3>
+    <p>累计消费 ${customerMoney(item.total)} · 下单 ${item.count} 次</p>
+    <p>累计获得 ${formatPoints(item.earned)} 积分 · 兑换 ${formatPoints(item.redeemed)} 积分</p>
+    <div class="quality-tags" aria-label="偏好标签">${item.tags.map(tag => `<span>${tag}</span>`).join('')}</div>
+    <section><h3>历史售后记录</h3>${item.claims.map(record => caseCard(record, false, id)).join('') || '<p class="muted">暂无售后记录。</p>'}</section>
+    <section><h3>历史订单明细</h3>${[...item.orders,...history].map(order => `<article class="service-order">
+      <strong>${order.items.map(product => `${escapeHtml(product.name)} × ${product.quantity}`).join('、')}</strong>
+      <p>${money(order.total)} · ${escapeHtml(order.time)}</p><p class="muted">${escapeHtml(order.id)} · ${claimStatus(order) || (order.status ? escapeHtml(order.status) : order.id.startsWith('DEMO-') ? '已完成 · 演示' : escapeHtml(deliveryOptions[order.delivery]?.status || '待自提'))}</p>
+    </article>`).join('')}</section>
+  </div>`);
+  dialog.scrollTop = 0;
+}
+
 function communityDashboard() {
   return `<section class="panel dashboard" aria-labelledby="dashboard-title">
     <h2 id="dashboard-title">单小区经营看板</h2>
@@ -795,6 +1008,7 @@ function communityDashboard() {
       <dt>${label}</dt><dd>${value}</dd><small>${detail}</small>
     </div>`).join('')}</dl>
   </section>
+  ${customerPanel()}
   <section class="panel"><h2>楼栋渗透热力</h2>
     <p class="muted">示例楼栋 · 已加入户数 / 楼栋总户数</p>
     <div class="reach-chart">${buildingReach.map(([building,joined,total]) => `
@@ -1150,6 +1364,14 @@ document.addEventListener('click', event => {
       button.textContent = `♥ ${Number(wish.voted)}`;
       break;
     }
+    case 'case-tab':
+      caseTab = id;
+      main.querySelector('[data-action="case-tab"][aria-pressed="true"]').setAttribute('aria-pressed','false');
+      button.setAttribute('aria-pressed','true');
+      main.querySelector('#case-list').innerHTML = caseList();
+      break;
+    case 'case-detail': showCase(id, button.dataset.public === 'true', button.dataset.customer); break;
+    case 'customer-detail': showCustomer(id); break;
     case 'dashboard':
       dashboardOpen = !dashboardOpen;
       render();
@@ -1241,6 +1463,17 @@ main.addEventListener('submit', event => {
 });
 main.addEventListener('input', event => {
   if (event.target.name === 'wish') event.target.setCustomValidity('');
+});
+main.addEventListener('input', event => {
+  if (event.target.id !== 'customer-search') return;
+  customerQuery = event.target.value;
+  main.querySelector('#customer-list').innerHTML = customerList();
+});
+main.addEventListener('change', event => {
+  if (event.target.id === 'customer-sort') customerSort = event.target.value;
+  else if (event.target.id === 'customer-claims-only') customerClaimsOnly = event.target.checked;
+  else return;
+  main.querySelector('#customer-list').innerHTML = customerList();
 });
 window.addEventListener('hashchange', () => {
   render();
