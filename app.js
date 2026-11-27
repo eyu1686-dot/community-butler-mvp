@@ -13,53 +13,25 @@ const direct = [
     quality:['粉糯小果','整果分装'], origin:'山东寿光', storage:'完整果放阴凉处，切开后密封冷藏并尽快食用。', review:'3栋周姐：蒸熟很粉糯，孩子用勺挖着吃。' },
 ];
 const freshCategories = { all:'全部臻选', fruit:'时令鲜果', seafood:'现捞海鲜', vegetable:'当季蔬菜', pantry:'粮油蛋奶' };
-const freshEditorial = {
-  dandong:'SEASONAL FRUIT · 丹东核心产区',
-  tiger:'COASTAL SELECTION · 湛江',
-  chile:'ORCHARD SELECTION · 智利中部',
-  hairtail:'COASTAL SELECTION · 舟山',
-  eggs:'PANTRY SELECTION · 安徽宣城',
-  pumpkin:'GARDEN SELECTION · 山东寿光',
-};
 const allocationLabels = ['基础礼遇价 · 满 10 份','满 30 份尊享价','满 50 份优选配额价'];
 let freshCategory = 'all';
-
-const freshStandards = [
-  { photo:'cherries', label:'标准 01 · 优中选优', title:'只挑大果与头茬货', detail:'拒绝通货混装，按果径与鲜度精选头部 20% 货源' },
-  { photo:'sorting', label:'标准 02 · 人工二次精挑', title:'开箱逐颗剔除瑕疵果', detail:'到站后管家逐盒开箱复检，软磕、坏果直接筛除' },
-  { photo:'dandong-scale', label:'标准 03 · 足斤足两净重', title:'去皮净重不注水', detail:'电子秤去包装箱复秤，坏果缺重拍照极速秒赔' },
-];
 
 function freshImage(photo, label, loading = 'lazy') {
   return `<span class="fresh-media"><span class="fresh-fallback" aria-hidden="true">${label}</span><img data-fresh-image src="./assets/${photo}.jpg" alt="${label}" loading="${loading}" decoding="async"></span>`;
 }
 
-function carouselMarkup(label, slides, options = {}) {
+function carouselMarkup(label, slides) {
   return `<div class="photo-carousel" data-carousel role="group" aria-label="${label}">
-    <div class="carousel-track ${options.trackClass || ''}" tabindex="0" aria-label="左右滑动或按方向键查看">
+    <div class="carousel-track" tabindex="0" aria-label="左右滑动或按方向键查看">
       ${slides.map((slide, index) => `<div class="carousel-slide" role="group" aria-label="第 ${index + 1} 张，共 ${slides.length} 张">${slide}</div>`).join('')}
     </div>
     <div class="carousel-controls">
-      ${options.arrows ? '<button class="secondary carousel-arrow" data-step="-1" aria-label="上一项精选标准">‹</button>' : ''}
       <div class="carousel-dots" role="group" aria-label="选择图片">
         ${slides.map((_, index) => `<button class="carousel-dot" data-slide="${index}" aria-label="第 ${index + 1} 张图片" aria-current="${index === 0}"><span></span></button>`).join('')}
       </div>
-      ${options.arrows ? '<button class="secondary carousel-arrow" data-step="1" aria-label="下一项精选标准">›</button>' : ''}
       <button class="carousel-toggle" data-carousel-toggle aria-label="暂停自动轮播">暂停</button>
     </div>
   </div>`;
-}
-
-function marketCarousel() {
-  const slides = freshStandards.map(scene => `<article class="market-slide">
-    ${freshImage(scene.photo, scene.title, 'eager')}
-    <div class="market-caption"><p><span>${scene.label}</span></p>
-      <h3>${scene.title}</h3><small>${scene.detail}</small></div>
-  </article>`);
-  return `<section class="market-carousel" aria-labelledby="market-title">
-    <div class="section-head"><div><h2 id="market-title">今日品控与精选标准</h2><p>买手头茬选货 · 管家逐盒复检</p></div></div>
-    ${carouselMarkup('每日首批次严选品控实录', slides, { trackClass:'market-track', arrows:true })}
-  </section>`;
 }
 
 const carouselControllers = new Map();
@@ -77,9 +49,10 @@ function startCarousel(root) {
   track.append(clone);
   let paused = motion.matches;
   let touching = false;
+  let inView = false;
   let timer;
   let settling;
-  const visible = () => !document.hidden && (dialog.open === dialog.contains(root));
+  const visible = () => inView && !document.hidden && (dialog.open === dialog.contains(root));
   const page = () => Math.min(count, Math.round(track.scrollLeft / (track.clientWidth || 1)));
 
   function move(index, smooth = true) {
@@ -138,20 +111,22 @@ function startCarousel(root) {
     if (!button) return;
     if (button === toggle) { paused = !paused; updateToggle(); return; }
     if (button.hasAttribute('data-slide')) move(Number(button.dataset.slide));
-    else if (button.hasAttribute('data-step')) {
-      const current = page() % count;
-      const step = Number(button.dataset.step);
-      move(step > 0 ? current + 1 : (current - 1 + count) % count);
-    } else return;
+    else return;
     schedule();
   });
   listen(document, 'visibilitychange', schedule);
   listen(motion, 'change', event => { paused = event.matches; updateToggle(); });
+  const viewport = new IntersectionObserver(([entry]) => {
+    inView = entry.intersectionRatio >= 0.35;
+    schedule();
+  }, { threshold:0.35 });
+  viewport.observe(track);
   updateToggle();
   return {
     schedule,
     stop() {
       events.abort();
+      viewport.disconnect();
       clearTimeout(timer);
       clearTimeout(settling);
     },
@@ -177,24 +152,25 @@ function groupTiers(item) {
     `<div class="tier ${index === level ? 'unlocked' : ''}"><span>${allocationLabels[index]}</span><strong>¥${price/100}</strong><small>${index === level ? '当前礼遇价' : index < level ? '已达标' : '待解锁'}</small></div>`).join('')}</div>`;
 }
 
-function freshGallery(item) {
+function freshGallery(item, loading = 'eager') {
   const images = [['外观全貌',item.photo], ['细节特写',item.id + '-cut'], ['现场去皮称重',item.id + '-scale']];
   return carouselMarkup(item.name + '商品图片', images.map(([label,photo], index) => `
-    ${freshImage(photo, item.name + ' · ' + label, 'eager')}
+    ${freshImage(photo, item.name + ' · ' + label, loading)}
     <span class="carousel-caption">${index + 1}/${images.length} · ${label}</span>`));
 }
 
 function showFreshDetail(item, fromSearch = false) {
-  openInfo(item.name, `<div class="search-detail fresh-detail">
+  openInfo(item.name, `<div class="search-detail fresh-detail" data-detail-product="${item.id}">
     ${fromSearch ? '<button class="secondary" data-action="search-back">返回搜索结果</button>' : ''}
     <div class="fresh-gallery">${freshGallery(item)}</div>
-    <p class="search-price">${searchPrice(item)}</p>
-    <p>${item.detail} · 已预订 ${joined(item)}/${limit} 份</p>
+    <p class="search-price" data-group-price>${searchPrice(item)}</p>
+    <p>${item.detail} · <span data-joined>已预订 ${joined(item)}/${limit} 份</span></p>
     <section><h3>生鲜详情与溯源</h3><p>${item.origin}</p><p>储藏建议：${item.storage}</p><p>商品图片仅供参考，产地记录为演示。</p></section>
     <section><h3>本小区已购短评 · 演示</h3><p>“${item.review}”</p></section>
-    <section><h3>邻里私享订购配额</h3>${groupTiers(item)}<p>北京时间 22:00 截单，按提交时解锁的价格结算。</p></section>
+    <section><h3>邻里私享订购配额</h3>${groupTiers(item)}<p data-cutoff></p></section>
     ${searchAction(item)}
   </div>`);
+  refreshGroups();
   dialog.scrollTop = 0;
   dialog.querySelector('.dialog-head button').focus({ preventScroll:true });
 }
@@ -452,36 +428,21 @@ function redeemGift(id) {
 }
 
 function freshPage() {
-  return `<section class="hero market-hero">
-    <img src="./assets/estate-hero.jpg" alt="" fetchpriority="high" width="1280" height="800">
-    <div><span class="eyebrow">每日首批次严选</span>
-      <h1>业主私享<br>鲜食礼遇</h1>
-      <p>每日首批次优中选优 · 管家人工二次精挑配送</p>
-      <button class="primary" data-action="browse">臻选今日鲜食</button>
-    </div>
-  </section>
-  ${marketCarousel()}
-  <button class="fresh-guarantee" data-action="fresh-guarantee" aria-haspopup="dialog">
-    <span class="guarantee-icon">${icon('shield-check')}</span>
-    <span><strong>品控与赔付承诺</strong><small>到站二次精挑 · 坏果缺重 1 分钟极速赔付</small></span>
+  return `<button class="fresh-guarantee" data-action="fresh-guarantee" aria-haspopup="dialog">
+    ${icon('shield-check')}<span>早市首批次买手精选 · 到站逐盒复检去皮重 · 坏果 1 分钟秒赔</span>
   </button>
-  <button class="rewards-banner" data-action="gift-hall"><span>${icon('gift')}</span><span>
-    <strong>业主会籍礼遇 · 积分兑换精选好礼</strong><small>当前可用 ${formatPoints(availablePoints())} 积分</small></span></button>
   <section id="catalog" aria-labelledby="catalog-title">
-    <div class="section-head"><h2 id="catalog-title" tabindex="-1">当季鲜食臻选</h2><p>每款配额 50 份</p></div>
-    <p class="group-note">商品规格与订购进度为演示。按提交时已生效的礼遇价结算。</p>
-    <div class="service-filters fresh-filters" role="group" aria-label="生鲜分类">${Object.entries(freshCategories).map(([id,label]) =>
+    <div class="service-filters fresh-filters" role="group" aria-label="鲜食分类">${Object.entries(freshCategories).map(([id,label]) =>
       `<button class="service-filter" data-action="fresh-category" data-id="${id}" aria-pressed="${id === freshCategory}">${label}</button>`).join('')}</div>
+    <h1 id="catalog-title" class="content-title">精选鲜食</h1>
     <div class="group-products">${direct.map(item => `<article class="group-product" data-product="${item.id}" ${freshCategory === 'all' || item.category === freshCategory ? '' : 'hidden'}>
-      <button class="fresh-photo" data-action="fresh-detail" data-id="${item.id}" aria-label="查看生鲜详情 · ${item.name}">${freshImage(item.photo, item.name)}</button>
-      <div class="group-summary">
-        <div><p class="editorial-label">${freshEditorial[item.id]}</p><h3><button class="fresh-title" data-action="fresh-detail" data-id="${item.id}">${item.name}</button></h3><p class="muted">${item.detail}</p>
-          <strong class="price" data-group-price></strong><small data-price-label></small></div></div>
-      <div class="quality-tags">${item.quality.map(label => `<span>${label}</span>`).join('')}</div>
-      <p class="cutoff" data-cutoff></p>
-      <label class="progress-label"><span data-joined></span><progress max="${limit}"></progress></label>
-      ${groupTiers(item)}
-      <button class="primary join" data-action="add" data-id="${item.id}"></button>
+      ${freshGallery(item, 'lazy')}
+      <h2><button class="fresh-title" data-action="fresh-detail" data-id="${item.id}">${item.name}</button></h2>
+      <p class="muted product-summary">${item.quality.join(' · ')} · ${item.detail}</p>
+      <div class="product-purchase">
+        <button class="product-price" data-action="fresh-detail" data-id="${item.id}" aria-label="查看礼遇价与商品详情 · ${item.name}"><strong class="price" data-group-price></strong><small>阶梯礼遇价</small></button>
+        <button class="primary join" data-action="add" data-id="${item.id}"></button>
+      </div>
     </article>`).join('')}</div>
   </section>`;
 }
@@ -493,22 +454,29 @@ function refreshGroups() {
     .map(value => String(value).padStart(2,'0')).join(':');
   for (const card of main.querySelectorAll('[data-product]')) {
     const item = direct.find(product => product.id === card.dataset.product);
-    const count = joined(item);
-    const level = tier(item);
-    card.querySelector('[data-cutoff]').textContent = remaining ? `距今晚 22:00 截单还剩 ${clock}` : '今晚已截单';
     card.querySelector('[data-group-price]').textContent = money(displayPrice(item));
-    card.querySelector('[data-price-label]').textContent = level < 0 ? ' / 份 · 基础礼遇参考价' : ' / 份 · 礼遇已生效';
-    card.querySelector('[data-joined]').textContent = `已预订 ${count}/${limit} 份`;
-    card.querySelector('progress').value = count;
-    card.querySelectorAll('.tier').forEach((element,index) => {
-      element.classList.toggle('unlocked', index === level);
-      element.querySelector('small').textContent = index === level ? '当前礼遇价' : index < level ? '已达标' : '待解锁';
-    });
     const button = card.querySelector('.join');
-    button.disabled = !remaining || count >= limit;
-    button.textContent = !remaining ? '已截单' : count >= limit ? '本批已订满' : state.cart[item.id] ? '加一份' : '预订一份';
-    button.setAttribute('aria-label', `${button.textContent} · ${item.name}`);
+    const label = !remaining ? '已截单' : joined(item) >= limit ? '本批已订满' : '加入购物袋';
+    button.disabled = label !== '加入购物袋';
+    button.textContent = label;
+    button.setAttribute('aria-label', `${label} · ${item.name}`);
   }
+  const detail = dialog.open ? dialog.querySelector('[data-detail-product]') : null;
+  if (!detail) return;
+  const item = direct.find(product => product.id === detail.dataset.detailProduct);
+  const level = tier(item);
+  detail.querySelector('[data-group-price]').textContent = searchPrice(item);
+  detail.querySelector('[data-cutoff]').textContent = remaining ? `距今晚 22:00 截单还剩 ${clock}` : '今晚已截单';
+  detail.querySelector('[data-joined]').textContent = `已预订 ${joined(item)}/${limit} 份`;
+  detail.querySelectorAll('.tier').forEach((element,index) => {
+    element.classList.toggle('unlocked', index === level);
+    element.querySelector('small').textContent = index === level ? '当前礼遇价' : index < level ? '已达标' : '待解锁';
+  });
+  const action = detail.querySelector('[data-action="search-add"]');
+  const label = !remaining ? '已截单' : joined(item) >= limit ? '本批已订满' : '加购';
+  action.disabled = label !== '加购';
+  action.textContent = label;
+  action.setAttribute('aria-label', `${label} · ${item.name}`);
 }
 
 function openInfo(title, content) {
@@ -522,9 +490,10 @@ function openInfo(title, content) {
 const pageHead = (title, description) => `<header class="page-head"><h1>${title}</h1><p>${description}</p></header>`;
 
 const serviceCategories = {
-  errands:'最后100米跑腿',
-  repairs:'一口价维修',
-  cleaning:'严选保洁',
+  cleaning:'深度保洁',
+  repairs:'清洗检修',
+  errands:'急件跑腿',
+  pets:'上门宠物照料',
 };
 const neighborhoodServices = [
   { id:'parcel', category:'errands', name:'代取驿站快递', icon:'package', price:200, unit:'/ 单', scope:'凭取件码代取，送到楼栋门口。' },
@@ -544,6 +513,8 @@ const extraServices = [
   { id:'switch', category:'repairs', name:'水电维修 · 更换开关', price:3000, unit:'工时费', scope:'含断电检查、单个开关更换和通电测试；开关由住户提供。', worker:'陈师傅', households:26 },
   { id:'lock', category:'repairs', name:'公安备案开锁换锁', price:8000, unit:'起', scope:'上门核验住户身份及房屋使用权；换锁材料和特殊锁型先报价。', worker:'许师傅', households:21 },
   { id:'appliance', category:'repairs', name:'洗衣机/冰箱上门检测', price:3000, unit:'/ 次', scope:'含一次上门故障检测；维修工时和配件另行确认。', worker:'刘师傅', households:37 },
+  { id:'city-errand', category:'errands', name:'同城急件跑腿', icon:'bike', price:1800, unit:'起', scope:'同城文件或轻便物品取送，距离与费用预约前确认。', worker:'赵阿姨' },
+  { id:'pet-visit', category:'pets', name:'上门喂宠与基础照料', icon:'paw-print', price:4900, unit:'/ 次', scope:'按业主指引添粮换水、清理食盆与猫砂，完成后反馈。', worker:'林管家' },
 ];
 const bookableServices = [...neighborhoodServices, ...extraServices];
 const hotSearches = ['修空调 / 加氟','找跑腿 / 代取快递','通下水 / 修水管','日常保洁 / 擦玻璃','丹东草莓'];
@@ -551,6 +522,8 @@ const searchAliases = {
   'ac-clean':'修空调 空调不制冷 洗空调 清洗空调 空调清洗与维修',
   'ac-repair':'修空调 空调不制冷 洗空调 加氟 空调清洗与维修',
   parcel:'找跑腿 跑跑 跑腿 拿快递 取快递 代取快递 驿站',
+  'city-errand':'同城急件 送文件 紧急配送',
+  'pet-visit':'喂猫 喂狗 喂宠 宠物照料 上门喂养',
   'urgent-errand':'找跑腿 跑跑 跑腿 急事跑腿 紧急代办',
   drain:'通下水 修水管 管道疏通 堵塞 通马桶 地漏',
   faucet:'通下水 修水管 水电维修 换水龙头 漏水',
@@ -587,7 +560,7 @@ function searchPrice(item) {
 }
 
 function searchEndorsement(item) {
-  if (item.worker) return `${item.worker} · 本小区已服务 ${item.households} 户`;
+  if (item.worker) return `${item.worker} · ${item.households ? `本小区已服务 ${item.households} 户` : '实名资料'}`;
   return searchEndorsements[item.id] || '买手精选 · 到货复秤';
 }
 
@@ -649,42 +622,22 @@ const buildings = ['1 栋','2 栋','3 栋','5 栋','6 栋'];
 const rooms = ['101','102','201','202','301','302','401','402','501','502','601','602'];
 const visitWindows = ['09:00–11:00','11:00–13:00','14:00–16:00','16:00–18:00','18:00–20:00'];
 const matchingStatus = '管家已接单 · 正在匹配本小区人员';
-let serviceCategory = 'errands';
+let serviceCategory = 'cleaning';
 
 const servicePrice = cents => '¥' + (cents / 100).toString();
 
-function endorsement(item) {
-  return `<details class="endorsement">
-    <summary>管家实测背书</summary>
-    <div class="endorsement-body">
-      <p><strong>${item.worker}</strong> · 从业 ${item.years} 年</p>
-      <p>本小区已服务 <strong>${item.households} 户</strong></p>
-      <p><strong>零隐形消费</strong> · 服务范围和明细事先确认。</p>
-      <p><strong>平台资金担保</strong> · 验收满意再结算给师傅。</p>
-    </div>
-  </details>`;
-}
-
 function selectPage() {
-  const errands = serviceCategory === 'errands';
-  const items = neighborhoodServices.filter(item => item.category === serviceCategory);
-  return `<header class="page-head select-hero">
-    <h1>邻里严选</h1><p>阳光花园一号院 · 经礼宾核验的到家服务</p>
-  </header>
+  const items = bookableServices.filter(item => item.category === serviceCategory);
+  return `<header class="simple-heading"><h1>到家服务</h1><p class="muted">人员实名资料与服务报价为演示。</p></header>
   <div class="service-filters" role="group" aria-label="服务分类">
     ${Object.entries(serviceCategories).map(([id, label]) => `<button class="service-filter" data-action="service-category" data-id="${id}" aria-pressed="${id === serviceCategory}">${label}</button>`).join('')}
   </div>
-  <p class="service-promise">${errands
-    ? '执行员均为本小区实名宝妈/退休邻居 · 平均12分钟送达'
-    : '公开服务范围与价格 · 验收满意再结算'}<small>人员与服务记录为演示数据</small></p>
   <section class="service-grid" aria-label="${serviceCategories[serviceCategory]}">
     ${items.map(item => `<article class="service-card">
-      <div class="service-card-head"><span class="service-icon" aria-hidden="true">${icon(item.icon)}</span>
-        <div><h2>${item.name}</h2><p class="service-price"><strong>${servicePrice(item.price)}</strong> <small>${item.unit}</small></p></div>
-      </div>
+      <div class="service-card-head"><div><h2>${item.name}</h2><p class="service-price"><strong>${servicePrice(item.price)}</strong> <small>${item.unit}</small></p></div></div>
+      <p class="muted">${item.worker || '社区管家'} · 实名资料（演示）</p>
       <p class="service-scope">${item.scope}</p>
-      ${errands ? '' : endorsement(item)}
-      <button class="primary service-book" data-action="book-service" data-id="${item.id}" aria-label="${errands ? '一键下单' : '预约上门'} · ${item.name}">${errands ? '一键下单' : '预约上门'}</button>
+      <button class="primary service-book" data-action="book-service" data-id="${item.id}" aria-label="预约上门 · ${item.name}">一键预约</button>
     </article>`).join('')}
   </section>`;
 }
@@ -760,7 +713,6 @@ const sampleCases = [
   { id:'SH-20261123-002', customer:'wang', owner:'5栋 王先生', name:'现捞冰鲜黑虎虾', issue:'去冰后复秤，净重与标示有差额', image:'./assets/tiger-scale.jpg', method:'replacement', amount:0, at:Date.parse('2026-11-23T18:06:00+08:00'), duration:105000, note:'周管家：已登记差额，下次生鲜订单随单补足。', penalty:1 },
   { id:'SH-20261122-003', customer:'chen', owner:'2栋 陈女士', name:'更换水龙头/软管', issue:'更换后接口仍有轻微渗水', image:'./assets/faucet-evidence.jpg', method:'refund', amount:600, at:Date.parse('2026-11-22T15:20:00+08:00'), duration:156000, note:'陈管家：复核服务记录，退回部分工时费并通知师傅复查。', penalty:2 },
 ];
-let caseTab = 'public';
 const formatCaseTime = at => new Date(at).toLocaleString('zh-CN', {
   timeZone:'Asia/Shanghai', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit',
 });
@@ -777,15 +729,6 @@ function ownCases() {
       penalty:2, local:true,
     };
   }).reverse().sort((a, b) => (b.at || 0) - (a.at || 0));
-}
-
-function visibleCases(isPublic) {
-  const own = ownCases();
-  if (!isPublic) return own;
-  return [...own.map(record => ({
-    ...record, image:record.image === demoDamage ? demoDamage : '', reason:'',
-    note:'管家已按公示规则处理，住户上传照片和备注仅本人可见。',
-  })), ...sampleCases];
 }
 
 function caseResult(record) {
@@ -809,9 +752,9 @@ function caseEvidence(record, large = false) {
     : '<span class="case-evidence-placeholder">凭证未公开或未保存</span>';
 }
 
-function caseCard(record, isPublic = false, fromCustomer = '') {
+function caseCard(record, fromCustomer = '') {
   return `<article class="case-card">
-    <button class="case-card-button" data-action="case-detail" data-id="${escapeHtml(record.id)}" data-public="${isPublic}" data-customer="${fromCustomer}">
+    <button class="case-card-button" data-action="case-detail" data-id="${escapeHtml(record.id)}" data-customer="${fromCustomer}">
       ${caseEvidence(record)}
       <span><strong>${escapeHtml(record.name)}</strong><small>${escapeHtml(record.id)} · ${escapeHtml(record.owner)}</small>
       <small>${escapeHtml(record.reason || record.issue)}</small><strong class="case-result">${caseResult(record)}</strong><small>${caseDuration(record)}</small></span>
@@ -819,13 +762,10 @@ function caseCard(record, isPublic = false, fromCustomer = '') {
   </article>`;
 }
 
-function caseList() {
-  const isPublic = caseTab === 'public';
-  return visibleCases(isPublic).map(record => caseCard(record, isPublic)).join('') || '<p class="muted">暂无个人售后记录。</p>';
-}
-
-function showCase(id, isPublic, customer) {
-  const record = [...visibleCases(isPublic), ...sampleCases].find(item => item.id === id);
+function showCase(id, customer) {
+  const profile = customers.find(item => item.id === customer);
+  const records = profile ? customerData(profile).claims : ownCases();
+  const record = records.find(item => item.id === id);
   if (!record) return;
   const end = record.at && record.duration ? record.at + record.duration : null;
   const final = record.method === 'refund' ? '退款原路到账' : '确认随单补发';
@@ -849,39 +789,23 @@ function showCase(id, isPublic, customer) {
 }
 
 function servicePage() {
-  const orders = state.orders.map(order => {
-    const names = order.items.map(item => escapeHtml(item.name)).join('、');
-    const result = order.claim && !order.claim.reviewUntil ? claimResult(order.claim) : '';
-    return `<article class="claim-order">
-      <div><strong>${names}</strong><p class="muted">${escapeHtml(order.id)}${order.demo ? ' · 演示历史订单' : ''} · ${money(order.total)}</p></div>
-      ${order.claim ? `<span class="status">${claimStatus(order)}</span>` : `<button class="primary" data-action="claim" data-id="${escapeHtml(order.id)}" aria-label="申请售后赔付 · ${names}">申请售后赔付</button>`}
-      ${result ? `<p class="claim-result">${result}</p>` : ''}
-    </article>`;
-  }).join('');
+  const orders = state.orders.filter(order => !order.claim);
   const oldRequests = state.requests.map(request => `<li>${escapeHtml(request.type)} · ${escapeHtml(request.detail)}</li>`).join('');
-  return `<header class="page-head after-head">
-    <h1>管家售后</h1><p>阳光花园一号院 · 本月服务承诺</p>
-    <div class="service-metrics">
-      <div><strong>100%</strong><span>售后秒赔率</span></div>
-      <div><strong>3 分钟</strong><span>平均响应时间</span></div>
-      <div><strong>1 家</strong><span>合作服务商淘汰公示</span></div>
-    </div>
-    <small>演示指标</small>
-  </header>
-  <section class="panel"><div class="claim-heading"><h2>一键拍照秒赔</h2><span class="status">免退回</span></div>
-    <p class="muted">选择订单、补充照片，查看模拟审核和赔付结果。</p>
-    ${orders}
-    ${oldRequests ? `<details class="panel"><summary>历史售后登记</summary><ul>${oldRequests}</ul></details>` : ''}
+  return `<header class="simple-heading"><h1>管家售后</h1></header>
+  <section class="panel"><h2>一键拍照极速赔付</h2>
+    ${orders.length ? `<label class="field">选择订单<select id="claim-order">
+      ${orders.map(order => `<option value="${escapeHtml(order.id)}">${order.items.map(item => escapeHtml(item.name)).join('、')} · ${money(order.total)}</option>`).join('')}
+      </select></label><button class="primary" data-action="claim-selected">申请售后赔付</button>`
+      : '<p class="muted">当前没有可申请售后的订单。</p>'}
   </section>
-  <section class="panel"><h2>售后详情与公示</h2>
-    <div class="service-filters" role="group" aria-label="售后记录分类">
-      <button class="service-filter" data-action="case-tab" data-id="mine" aria-pressed="${caseTab === 'mine'}">我的售后记录</button>
-      <button class="service-filter" data-action="case-tab" data-id="public" aria-pressed="${caseTab === 'public'}">小区售后公示</button>
-    </div>
-    <p class="muted">公示案例为演示。住户上传照片和补充说明仅留在本机个人记录。</p>
-    <div id="case-list">${caseList()}</div>
-  </section>
-  <section class="panel"><h2>一对一专属管家留言 / 需求许愿池</h2>
+  <section class="panel"><h2>我的售后记录</h2>
+    <div id="case-list">${ownCases().map(record => caseCard(record)).join('') || '<p class="muted">暂无个人售后记录。</p>'}</div>
+    ${oldRequests ? `<details><summary>历史售后登记</summary><ul>${oldRequests}</ul></details>` : ''}
+  </section>`;
+}
+
+function ownerMessages() {
+  return `
     <form id="wish-form">
       <label class="field">留言去向<select name="audience"><option value="wish">发布到小区许愿池</option><option value="private">仅留言给专属管家</option></select></label>
       <label class="field">想告诉管家什么？<textarea name="wish" required maxlength="160" rows="2" placeholder="希望礼宾下次为您甄选哪些水果或海鲜？"></textarea></label>
@@ -893,7 +817,7 @@ function servicePage() {
       <button class="wish-vote" data-action="vote" data-id="${escapeHtml(wish.id)}" aria-pressed="${Boolean(wish.voted)}" aria-label="点赞：${escapeHtml(wish.text)}">♥ ${Number(wish.voted || 0)}</button>
     </article>`).join('') || '<p class="muted">还没有公开许愿。</p>'}</div>
     ${state.messages.length ? `<details class="private-messages"><summary>我的管家留言</summary>${state.messages.map(message => `<p>${escapeHtml(message)}</p>`).join('')}</details>` : ''}
-  </section>`;
+  `;
 }
 
 function clearClaimPhoto() {
@@ -992,7 +916,6 @@ async function submitClaim(form) {
     form.querySelector('[data-photo-status]').textContent = '无法保存售后申请，请检查浏览器存储空间。';
     return;
   }
-  caseTab = 'mine';
   clearClaimPhoto();
   render();
   openInfo('管家极速审核', `<div class="claim-review" data-review="${escapeHtml(id)}" role="status">
@@ -1009,7 +932,8 @@ function orderSavings(items) {
 
 const pickupCode = 'YG-3-02-0816';
 const inviteCode = 'YG3-28';
-let dashboardOpen = false;
+let avatarTaps = 0;
+let lastAvatarTap = 0;
 
 const dashboardMetrics = [
   ['覆盖户数','1,500 户','阳光花园一号院'],
@@ -1089,11 +1013,12 @@ function showCustomer(id) {
     items:[{ name:profile.items[index % profile.items.length], quantity:1 }],
   }));
   openInfo('客户详情', `<div class="ops-detail">
+    <button class="secondary" data-action="dashboard-back">返回经营看板</button>
     <h3>${item.address} ${item.name}</h3>
     <p>累计消费 ${customerMoney(item.total)} · 下单 ${item.count} 次</p>
     <p>累计获得 ${formatPoints(item.earned)} 积分 · 兑换 ${formatPoints(item.redeemed)} 积分</p>
     <div class="quality-tags" aria-label="偏好标签">${item.tags.map(tag => `<span>${tag}</span>`).join('')}</div>
-    <section><h3>历史售后记录</h3>${item.claims.map(record => caseCard(record, false, id)).join('') || '<p class="muted">暂无售后记录。</p>'}</section>
+    <section><h3>历史售后记录</h3>${item.claims.map(record => caseCard(record, id)).join('') || '<p class="muted">暂无售后记录。</p>'}</section>
     <section><h3>历史订单明细</h3>${[...item.orders,...history].map(order => `<article class="service-order">
       <strong>${order.items.map(product => `${escapeHtml(product.name)} × ${product.quantity}`).join('、')}</strong>
       <p>${money(order.total)} · ${escapeHtml(order.time)}</p><p class="muted">${escapeHtml(order.id)} · ${claimStatus(order) || (order.status ? escapeHtml(order.status) : order.id.startsWith('DEMO-') ? '已完成 · 演示' : escapeHtml(deliveryOptions[order.delivery]?.status || '待自提'))}</p>
@@ -1127,32 +1052,44 @@ function communityDashboard() {
   </ol></section>`;
 }
 
+function showDashboard() {
+  openInfo('经营看板与客户明细', `<div class="ops-detail">${communityDashboard()}</div>`);
+  dialog.scrollTop = 0;
+  dialog.querySelector('.dialog-head button').focus({ preventScroll:true });
+}
+
+function memberProgress() {
+  const points = Math.max(0, availablePoints());
+  const available = gifts.filter(gift => giftStock(gift) > 0).sort((a,b) => a.cost - b.cost);
+  const target = available.find(gift => gift.cost > points);
+  if (!target) return '<p>已达到当前在库好礼的兑换门槛。</p>';
+  return `<label class="member-progress">再攒 ${formatPoints(target.cost - points)} 积分可兑${target.name}
+    <progress value="${points}" max="${target.cost}"></progress></label>`;
+}
+
 function communityPage() {
-  const header = `<header class="page-head community-head">
-    <div><h1>我的小区</h1><p>阳光花园一号院</p></div>
-    <button class="secondary dashboard-toggle" data-action="dashboard" aria-pressed="${dashboardOpen}">经营看板</button>
-  </header>`;
-  if (dashboardOpen) return header + communityDashboard();
-  const savings = state.orders.reduce((sum, order) => sum + (order.savings ?? orderSavings(order.items)), 0);
-  const protectedOrders = state.orders.filter(order => order.claim && !order.claim.reviewUntil).length;
   const orders = state.orders.map(orderDetails).join('');
-  return header + `
-    <section class="panel resident-card">
-      <div class="resident-head"><div><h2>${residentAddress.building}</h2><p class="muted">北门管家自提点 · 17:00–20:00</p></div>
-        <button class="secondary" data-action="pickup-code">我的提货码</button></div>
-      <dl class="resident-stats"><div><dt>累计节省</dt><dd>${money(savings)}</dd></div>
-        <div><dt>已获售后保障</dt><dd>${protectedOrders} 次</dd></div></dl>
-      <div class="resident-rewards"><div>我的积分余额 <strong>${formatPoints(availablePoints())} 积分</strong></div>
-        <button class="secondary" data-action="gift-hall">去兑换</button></div>
-    </section>
-    <section class="panel invite-card"><h2>申请成为本栋楼长 / 邀请邻居</h2>
-      <label class="progress-label"><span>3栋已有 28 户加入</span><progress value="28" max="30"></progress></label>
-      <p class="muted">再邀 2 户解锁本栋专属免配送费特权。</p>
-      <div class="invite-actions"><button class="secondary" data-action="invite">邀请邻居 · ${inviteCode}</button>
-        <button class="primary" data-action="leader" ${state.leaderApplied ? 'disabled' : ''}>${state.leaderApplied ? '楼长申请已登记' : '申请成为楼长'}</button></div>
-    </section>
-    <section class="panel"><h2 id="orders-title" tabindex="-1">我的订单</h2>${orders || '<p class="muted">暂无订单</p>'}</section>
-    <section class="panel"><h2>添加到 iPhone 主屏幕</h2><p>在 Safari 点按「分享」，选择「添加到主屏幕」。如出现「作为网页 App 打开」选项，请保持开启。</p></section>`;
+  return `<header class="simple-heading community-head">
+    <h1>我的</h1>
+    <button class="owner-avatar" data-action="owner-avatar" aria-label="阳光花园业主徽章"><img src="./assets/icon-192.png" width="40" height="40" alt=""></button>
+  </header>
+  <section class="panel resident-card">
+    <div class="resident-head"><div><h2>业主会籍</h2><p class="muted">${residentAddress.building} · ¥1 = 1 积分</p></div>
+      <p class="member-balance">${formatPoints(availablePoints())}<small> 积分</small></p></div>
+    ${memberProgress()}
+  </section>
+  <section class="panel"><h2 id="orders-title" tabindex="-1">我的订单记录</h2>${orders || '<p class="muted">暂无订单</p>'}</section>
+  <section class="panel redemption-entry"><h2>积分礼遇兑换馆</h2><button class="secondary" data-action="gift-hall">进入兑换馆</button></section>
+  <details class="panel owner-tools"><summary>业主工具</summary>
+    <div class="invite-actions"><button class="secondary" data-action="pickup-code">我的提货码</button>
+      <button class="secondary" data-action="invite">邀请邻居 · ${inviteCode}</button>
+      <button class="secondary" data-action="leader" ${state.leaderApplied ? 'disabled' : ''}>${state.leaderApplied ? '楼长申请已登记' : '申请成为楼长'}</button></div>
+    <p class="muted">北门管家自提点 · 17:00–20:00</p>
+    <p class="muted">3栋已有 28 户加入，再邀 2 户解锁免配送费特权。</p>
+    <p class="muted">累计节省 ${money(state.orders.reduce((sum, order) => sum + (order.savings ?? orderSavings(order.items)), 0))} · 已获售后保障 ${state.orders.filter(order => order.claim && !order.claim.reviewUntil).length} 次</p>
+    <details id="owner-messages"><summary>管家留言与需求许愿</summary>${ownerMessages()}</details>
+    <details><summary>添加到 iPhone 主屏幕</summary><p>在 Safari 点按「分享」，选择「添加到主屏幕」。如有「作为网页 App 打开」选项，请保持开启。</p></details>
+  </details>`;
 }
 
 function reorder(id) {
@@ -1195,6 +1132,9 @@ function render() {
   const route = location.hash.slice(1);
   const active = tabs.includes(route) ? route : 'fresh';
   document.querySelector('#global-search').hidden = !['fresh','select'].includes(active);
+  document.querySelector('.topbar .bag').hidden = active === 'fresh';
+  document.querySelector('.topbar').classList.toggle('home-topbar', active === 'fresh');
+  if (active !== 'community') avatarTaps = 0;
   main.innerHTML = { fresh:freshPage, select:selectPage, service:servicePage, community:communityPage }[active]();
   for (const link of document.querySelectorAll('.nav a')) {
     if (link.hash === '#' + active) link.setAttribute('aria-current', 'page');
@@ -1305,7 +1245,6 @@ function checkout() {
 }
 
 function showOrders(message, saved) {
-  dashboardOpen = false;
   if (location.hash !== '#community') history.pushState(null, '', '#community');
   render();
   document.querySelector('#orders-title').focus();
@@ -1435,7 +1374,6 @@ document.addEventListener('click', event => {
       }
       break;
     case 'book-service': showBooking(id); break;
-    case 'claim': showClaim(id); break;
     case 'demo-photo':
       clearClaimPhoto();
       dialog.querySelector('[name="photo"]').value = '';
@@ -1450,19 +1388,20 @@ document.addEventListener('click', event => {
       button.textContent = `♥ ${Number(wish.voted)}`;
       break;
     }
-    case 'case-tab':
-      caseTab = id;
-      main.querySelector('[data-action="case-tab"][aria-pressed="true"]').setAttribute('aria-pressed','false');
-      button.setAttribute('aria-pressed','true');
-      main.querySelector('#case-list').innerHTML = caseList();
-      break;
-    case 'case-detail': showCase(id, button.dataset.public === 'true', button.dataset.customer); break;
+    case 'claim-selected': showClaim(main.querySelector('#claim-order').value); break;
+    case 'case-detail': showCase(id, button.dataset.customer); break;
     case 'customer-detail': showCustomer(id); break;
-    case 'dashboard':
-      dashboardOpen = !dashboardOpen;
-      render();
-      main.querySelector('.dashboard-toggle').focus({ preventScroll:true });
+    case 'dashboard-back': showDashboard(); break;
+    case 'owner-avatar': {
+      const now = performance.now();
+      avatarTaps = now - lastAvatarTap <= 800 ? avatarTaps + 1 : 1;
+      lastAvatarTap = now;
+      if (avatarTaps === 3) {
+        avatarTaps = 0;
+        showDashboard();
+      }
       break;
+    }
     case 'pickup-code':
       openInfo('我的提货码', `<div class="pickup-code"><img src="./assets/pickup-qr.png" width="220" height="220" alt="提货码二维码 ${pickupCode}"><strong>${pickupCode}</strong><p>北门管家自提点 · 演示提货码</p></div>`);
       break;
@@ -1495,16 +1434,8 @@ document.addEventListener('click', event => {
       break;
     case 'reorder': reorder(id); break;
     case 'bag': showBag(); break;
-    case 'quality':
-      openInfo('业主服务宪章', `<ul class="agreement">
-        <li><strong>首批次买手精选</strong><p>按果径和鲜度选货，到站人工复检后分装。</p></li>
-        <li><strong>到货挑拣与复秤</strong><p>按批记录到货状态，分装后复核净重。</p></li>
-        <li><strong>品质问题优先处理</strong><p>发现坏果可直接通过管家售后登记。</p></li>
-        <li><strong>按日鲜食配额</strong><p>每日限量，批次到期下架。</p></li>
-      </ul>`);
-      break;
-    case 'fresh-guarantee':
-      openInfo('业主鲜食服务保障卡', `<ul class="agreement guarantee-list">
+    case 'quality': case 'fresh-guarantee':
+      openInfo('鲜食服务保障卡', `<ul class="agreement guarantee-list">
         <li><strong>开箱验货</strong><p>到站逐盒复检，软磕、坏果直接筛除，确认状态后再分装。</p></li>
         <li><strong>净重承诺</strong><p>电子秤去除包装重量后复秤，按商品标注的净重交付。</p></li>
         <li><strong>坏果秒赔</strong><p>发现坏果或缺重，可在管家售后提交照片，按 1 分钟内赔付标准处理。线上赔付为演示流程。</p></li>
@@ -1514,10 +1445,6 @@ document.addEventListener('click', event => {
     case 'add': case 'plus': changeQuantity(id, 1); break;
     case 'minus': changeQuantity(id, -1); break;
     case 'checkout': checkout(); break;
-    case 'browse':
-      document.querySelector('#catalog-title').focus({ preventScroll:true });
-      document.querySelector('#catalog').scrollIntoView();
-      break;
 
   }
 });
@@ -1537,22 +1464,24 @@ main.addEventListener('submit', event => {
   else state.wishes.unshift({ id:Date.now().toString(36), text, voted:false });
   const saved = save();
   render();
+  main.querySelector('.owner-tools').open = true;
+  main.querySelector('#owner-messages').open = true;
   main.querySelector('#wish-form textarea').focus({ preventScroll:true });
   notify(audience.value === 'private' ? '专属管家留言已保存' : '许愿已发布', saved);
 });
 main.addEventListener('input', event => {
   if (event.target.name === 'wish') event.target.setCustomValidity('');
 });
-main.addEventListener('input', event => {
+dialog.addEventListener('input', event => {
   if (event.target.id !== 'customer-search') return;
   customerQuery = event.target.value;
-  main.querySelector('#customer-list').innerHTML = customerList();
+  dialog.querySelector('#customer-list').innerHTML = customerList();
 });
-main.addEventListener('change', event => {
+dialog.addEventListener('change', event => {
   if (event.target.id === 'customer-sort') customerSort = event.target.value;
   else if (event.target.id === 'customer-claims-only') customerClaimsOnly = event.target.checked;
   else return;
-  main.querySelector('#customer-list').innerHTML = customerList();
+  dialog.querySelector('#customer-list').innerHTML = customerList();
 });
 window.addEventListener('hashchange', () => {
   render();

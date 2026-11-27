@@ -1,12 +1,12 @@
-const cacheName = 'community-butler-v15';
+const cacheName = 'community-butler-v16';
 const prefix = 'community-butler-';
 const localFiles = [
   './', './index.html', './style.css', './app.js', './manifest.json',
   './assets/lucide.min.js', './assets/icon-180.png', './assets/icon-192.png', './assets/icon-512.png',
-  './assets/estate-hero.jpg', './assets/strawberries.jpg', './assets/tomatoes.jpg',
+  './assets/strawberries.jpg', './assets/tomatoes.jpg',
   './assets/greens.jpg', './assets/bread.jpg',
   './assets/pickup-qr.png', './assets/faucet-evidence.jpg', './assets/berry-damage.jpg', './assets/shrimp.jpg', './assets/cherries.jpg', './assets/fish.jpg',
-  './assets/eggs.jpg', './assets/pumpkin.jpg', './assets/sorting.jpg', './assets/dandong-cut.jpg',
+  './assets/eggs.jpg', './assets/pumpkin.jpg', './assets/dandong-cut.jpg',
   './assets/dandong-scale.jpg', './assets/chile-cut.jpg', './assets/chile-scale.jpg',
   './assets/tiger-cut.jpg', './assets/tiger-scale.jpg', './assets/hairtail-cut.jpg',
   './assets/hairtail-scale.jpg', './assets/eggs-cut.jpg', './assets/eggs-scale.jpg',
