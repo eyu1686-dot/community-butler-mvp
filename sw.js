@@ -1,4 +1,4 @@
-const cacheName = 'community-butler-v5';
+const cacheName = 'community-butler-v6';
 const prefix = 'community-butler-';
 const localFiles = [
   './', './index.html', './style.css', './app.js', './manifest.json',

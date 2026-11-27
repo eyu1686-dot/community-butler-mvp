@@ -182,3 +182,25 @@ body.has-checkout{padding-bottom:calc(163px + env(safe-area-inset-bottom))}
 .reach-track{height:12px;background:var(--mint);border-radius:12px;overflow:hidden}
 .reach-track span{display:block;height:100%;background:#26744f;border-radius:12px}
 .model ol{padding-left:20px;margin:0}.model li+li{margin-top:9px}.model li p{font-size:14px;color:var(--muted)}
+
+/* Global service and fresh product search */
+.global-search{position:sticky;top:env(safe-area-inset-top);z-index:2;padding-bottom:9px;background:#faf8f2}
+.global-search button{display:flex;align-items:center;gap:8px;width:100%;min-height:46px;border:1px solid #a9c2ad;border-radius:14px;background:#edf4e9;padding:8px 11px;text-align:left;font-size:14px;color:var(--green)}
+.global-search svg{width:19px;height:19px;flex:none}
+dialog:has(.search-panel,.search-detail){inset:auto 0 0;width:min(100%,600px);max-height:calc(100dvh - 12px - env(safe-area-inset-top));margin:0 auto;padding:14px 16px calc(16px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;overscroll-behavior:contain}
+.search-panel .field{margin:8px 0 12px}
+.search-panel input{width:100%;min-height:44px;border:1px solid #a9c2ad;border-radius:11px;padding:8px 10px;background:#fff;font-size:16px}
+.search-panel h3,.search-detail h3{font-size:16px}
+.hot-searches,.search-actions{display:flex;flex-wrap:wrap;gap:7px}
+.hot-searches{margin:6px 0 12px}
+.hot-searches button{border-radius:24px}
+#search-count:not(:empty){margin-bottom:7px}
+.search-result{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:8px}
+.search-result-title{display:block;padding:3px 0;min-height:32px;text-align:left;font-size:17px;font-weight:800}
+.search-price{color:#984009;font-weight:800;font-size:18px}
+.search-endorsement{color:var(--green);font-size:13px;margin:4px 0 9px}
+.search-detail{display:grid;gap:8px}
+.search-detail section{border-top:1px solid var(--line);padding:8px 0}
+.search-detail section p{margin-top:3px;color:var(--muted)}
+.search-detail button{justify-self:start}
+#catalog{scroll-margin-top:76px}

@@ -214,6 +214,114 @@ const neighborhoodServices = [
   { id:'housekeeping', category:'cleaning', name:'三居室深度日常保洁', icon:'sparkles', price:3500, unit:'/ 小时', scope:'按小时计费，预约以 1 小时为起订，延时须先确认。', worker:'李师傅', years:8, households:54 },
   { id:'hood', category:'cleaning', name:'油烟机高温拆洗', icon:'fan', price:11800, unit:'一口价', scope:'含高温去油、滤网拆洗与复装试机。', worker:'王师傅', years:11, households:31 },
 ];
+// Additional bookable services are discoverable through global search.
+const extraServices = [
+  { id:'ac-clean', category:'repairs', name:'空调挂机清洗', price:6800, unit:'/ 台', scope:'含挂机滤网、蒸发器及接水盘清洗，完工试机。', worker:'王师傅', households:46 },
+  { id:'ac-repair', category:'repairs', name:'空调维修 · 加氟', price:12000, unit:'起', scope:'先测压力、检查泄漏，再按机型及制冷剂用量确认报价；维修配件另行确认。', worker:'王师傅', households:46 },
+  { id:'urgent-errand', category:'errands', name:'急事跑腿代办', price:500, unit:'/ 单', scope:'含小区内单次紧急代办或物品递送。', worker:'赵阿姨', households:32 },
+  { id:'switch', category:'repairs', name:'水电维修 · 更换开关', price:3000, unit:'工时费', scope:'含断电检查、单个开关更换和通电测试；开关由住户提供。', worker:'陈师傅', households:26 },
+  { id:'lock', category:'repairs', name:'公安备案开锁换锁', price:8000, unit:'起', scope:'上门核验住户身份及房屋使用权；换锁材料和特殊锁型先报价。', worker:'许师傅', households:21 },
+  { id:'appliance', category:'repairs', name:'洗衣机/冰箱上门检测', price:3000, unit:'/ 次', scope:'含一次上门故障检测；维修工时和配件另行确认。', worker:'刘师傅', households:37 },
+];
+const bookableServices = [...neighborhoodServices, ...extraServices];
+const hotSearches = ['修空调 / 加氟','找跑腿 / 代取快递','通下水 / 修水管','日常保洁 / 擦玻璃','丹东草莓'];
+const searchAliases = {
+  'ac-clean':'修空调 空调不制冷 洗空调 清洗空调 空调清洗与维修',
+  'ac-repair':'修空调 空调不制冷 洗空调 加氟 空调清洗与维修',
+  parcel:'找跑腿 跑跑 跑腿 拿快递 取快递 代取快递 驿站',
+  'urgent-errand':'找跑腿 跑跑 跑腿 急事跑腿 紧急代办',
+  drain:'通下水 修水管 管道疏通 堵塞 通马桶 地漏',
+  faucet:'通下水 修水管 水电维修 换水龙头 漏水',
+  switch:'水电维修 换开关 修开关 电工',
+  housekeeping:'日常保洁 擦玻璃 精细保洁 打扫卫生 家政',
+  lock:'开锁 换锁 锁匠 公安备案',
+  appliance:'家电维修 修家电 修洗衣机 修冰箱 冰箱不制冷 洗衣机故障',
+  dandong:'丹东草莓 红颜草莓 水果 生鲜',
+  tiger:'黑虎虾 鲜虾 海鲜 生鲜',
+  chile:'车厘子 樱桃 水果 生鲜',
+  hairtail:'带鱼 海鲜 生鲜',
+};
+const searchEndorsements = {
+  parcel:'赵阿姨 · 本小区已服务 46 户',
+  trash:'顾叔 · 本小区已服务 18 户',
+  takeout:'赵阿姨 · 本小区已服务 46 户',
+  tools:'顾叔 · 本小区已服务 18 户',
+};
+const searchEntries = [...bookableServices, ...direct];
+let searchQuery = '';
+const normalizeSearch = value => value.normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, '');
+
+function searchMatches(item, query) {
+  const groups = query.split(/[/／|、]+/).map(group => group.trim().split(/\s+/).map(normalizeSearch).filter(Boolean)).filter(group => group.length);
+  if (!groups.length) return false;
+  const keywords = [item.name, item.scope || item.detail, searchAliases[item.id] || '', serviceCategories[item.category] || ''].map(normalizeSearch);
+  return groups.some(group => group.every(token => keywords.some(keyword => keyword.includes(token))));
+}
+
+function searchPrice(item) {
+  return item.tiers ? `${servicePrice(displayPrice(item))} / 份 · ${tier(item) < 0 ? '首档参考价' : '当前团价'}` : `${servicePrice(item.price)} ${item.unit}`;
+}
+
+function searchEndorsement(item) {
+  if (item.worker) return `${item.worker} · 本小区已服务 ${item.households} 户`;
+  return searchEndorsements[item.id] || '管家市场直采 · 到货抽检';
+}
+
+function searchAction(item) {
+  if (!item.tiers) return `<button class="primary" data-action="book-service" data-id="${item.id}" aria-label="立即预约 · ${item.name}">立即预约</button>`;
+  const unavailable = !batchTime().remaining ? '已截单' : joined(item) >= limit ? '已拼满' : '';
+  return `<button class="primary" data-action="search-add" data-id="${item.id}" aria-label="${unavailable || '加购'} · ${item.name}" ${unavailable ? 'disabled' : ''}>${unavailable || '加购'}</button>`;
+}
+
+function paintSearch() {
+  const results = dialog.querySelector('#search-results');
+  const items = searchEntries.filter(item => searchMatches(item, searchQuery));
+  dialog.querySelector('#search-count').textContent = !searchQuery.trim() ? '' : `找到 ${items.length} 项`;
+  results.innerHTML = items.map(item => `<article class="search-result" data-search-item="${item.id}">
+    <button class="search-result-title" data-action="search-detail" data-id="${item.id}">${item.name}</button>
+    <p class="search-price">${searchPrice(item)}</p>
+    <p class="search-endorsement">管家实测背书（演示） · ${searchEndorsement(item)}</p>
+    <div class="search-actions"><button class="secondary" data-action="search-detail" data-id="${item.id}" aria-label="查看报价详情 · ${item.name}">查看报价详情</button>${searchAction(item)}</div>
+  </article>`).join('') || `<p class="muted">${searchQuery.trim() ? '暂无匹配，可试试服务名、商品名或热搜词。' : '试试输入需求，或点选上方热搜。'}</p>`;
+}
+
+function showSearch(remember = false) {
+  if (!remember) searchQuery = '';
+  openInfo('全局服务与生鲜搜索', `<div class="search-panel">
+    <label class="field">搜索服务或生鲜<input type="search" id="search-input" autocomplete="off" placeholder="搜服务/生鲜：如 修空调、找跑腿、保洁、草莓..."></label>
+    <h3>本小区高频热搜</h3>
+    <div class="hot-searches">${hotSearches.map(label => `<button class="secondary" data-action="hot-search" data-id="${label}">${label}</button>`).join('')}</div>
+    <p id="search-count" class="muted" role="status"></p>
+    <div id="search-results"></div>
+  </div>`);
+  dialog.scrollTop = 0;
+  const input = dialog.querySelector('#search-input');
+  input.value = searchQuery;
+  paintSearch();
+  if (!remember) input.focus({ preventScroll:true });
+  else dialog.querySelector('.dialog-head button').focus({ preventScroll:true });
+}
+
+function showSearchDetail(id) {
+  const item = searchEntries.find(entry => entry.id === id);
+  if (!item) return;
+  const details = item.tiers
+    ? `<p>${item.detail} · 已拼 ${joined(item)}/${limit} 份</p><p>${thresholds.map((count, index) => `满 ${count} 份 ${servicePrice(item.tiers[index])}`).join(' · ')}</p><p>北京时间 22:00 截单，按提交时解锁的价格结算。</p>`
+    : `<p>${item.scope}</p>`;
+  const review = item.tiers ? '“自提时能看到到货状态，份量写得清楚。”' : '“预约前就能看到收费明细，上门后按约定做完。”';
+  openInfo(item.name, `<div class="search-detail">
+    <button class="secondary" data-action="search-back">返回搜索结果</button>
+    <p class="search-price">${searchPrice(item)}</p>
+    <p class="search-endorsement">管家实测背书（演示） · ${searchEndorsement(item)}</p>
+    <section><h3>服务明细</h3>${details}</section>
+    <section><h3>零加价承诺</h3><p>${item.tiers ? '份量、阶梯价及配送费用均在下单前明示。' : '按已确认的服务与价格结算。额外材料或工时先说明并经住户同意。'}</p></section>
+    <section><h3>用户评价 · 演示</h3><p>${review}</p></section>
+    ${searchAction(item)}
+  </div>`);
+  dialog.scrollTop = 0;
+  dialog.querySelector('[data-action="search-back"]').focus();
+}
+
 const buildings = ['1 栋','2 栋','3 栋','5 栋','6 栋'];
 const rooms = ['101','102','201','202','301','302','401','402','501','502','601','602'];
 const visitWindows = ['09:00–11:00','11:00–13:00','14:00–16:00','16:00–18:00','18:00–20:00'];
@@ -269,7 +377,7 @@ function bookingOptions(values, selected) {
 }
 
 function showBooking(id, previous) {
-  const item = neighborhoodServices.find(service => service.id === id);
+  const item = bookableServices.find(service => service.id === id);
   if (!item) return;
   const [building, room] = previous?.address.match(/^(.*栋) (\d+) 室$/)?.slice(1) || [];
   openInfo('预约下单', `<p class="booking-item"><strong>${item.name}</strong> <span>${servicePrice(item.price)} ${item.unit}</span></p>
@@ -282,6 +390,8 @@ function showBooking(id, previous) {
       <label class="field">备注说明（选填）<textarea name="notes" rows="3" maxlength="200" placeholder="可填写服务内容或上门说明"></textarea></label>
       <button class="primary service-book" type="submit">提交演示预约</button>
     </form>`);
+  dialog.scrollTop = 0;
+  dialog.querySelector('[name="building"]').focus({ preventScroll:true });
 }
 
 function orderDetails(order) {
@@ -544,6 +654,7 @@ function render() {
   syncBatch();
   const route = location.hash.slice(1);
   const active = tabs.includes(route) ? route : 'fresh';
+  document.querySelector('#global-search').hidden = !['fresh','select'].includes(active);
   main.innerHTML = { fresh:freshPage, select:selectPage, service:servicePage, community:communityPage }[active]();
   for (const link of document.querySelectorAll('.nav a')) {
     if (link.hash === '#' + active) link.setAttribute('aria-current', 'page');
@@ -603,7 +714,14 @@ function changeQuantity(id, delta) {
   if (!item) return;
   if (delta > 0 && item.tiers && (!batchTime().remaining || joined(item) >= limit)) {
     if (dialog.open) {
-      const warning = dialog.querySelector('[data-blocker]');
+      let warning = dialog.querySelector('[data-blocker]');
+      if (!warning) {
+        warning = document.createElement('p');
+        warning.dataset.blocker = '';
+        warning.className = 'cutoff';
+        warning.setAttribute('role','status');
+        dialogContent.querySelector('.dialog-head').after(warning);
+      }
       warning.hidden = false;
       warning.textContent = batchTime().remaining ? '该商品已拼满' : '该商品已截单';
     } else notify(batchTime().remaining ? '该商品已拼满' : '该商品已截单');
@@ -651,6 +769,12 @@ function showOrders(message, saved) {
   notify(message, saved);
 }
 
+dialog.addEventListener('input', event => {
+  if (event.target.id !== 'search-input') return;
+  searchQuery = event.target.value;
+  paintSearch();
+});
+
 dialog.addEventListener('submit', event => {
   const form = event.target;
   if (form.id === 'claim-form') {
@@ -660,7 +784,7 @@ dialog.addEventListener('submit', event => {
   }
   if (form.id !== 'booking-form') return;
   event.preventDefault();
-  const item = neighborhoodServices.find(service => service.id === form.dataset.service);
+  const item = bookableServices.find(service => service.id === form.dataset.service);
   if (!item) return;
   const { building, room, slot, notes } = Object.fromEntries(new FormData(form));
   if (!buildings.includes(building) || !rooms.includes(room)) return;
@@ -708,9 +832,22 @@ dialog.addEventListener('change', event => {
 
 document.addEventListener('click', event => {
   const button = event.target.closest('button[data-action]');
-  if (!button) return;
+  if (!button) {
+    const result = event.target.closest('[data-search-item]');
+    if (result) showSearchDetail(result.dataset.searchItem);
+    return;
+  }
   const { action, id } = button.dataset;
   switch (action) {
+    case 'global-search': showSearch(); break;
+    case 'hot-search':
+      searchQuery = id;
+      dialog.querySelector('#search-input').value = id;
+      paintSearch();
+      break;
+    case 'search-detail': showSearchDetail(id); break;
+    case 'search-back': showSearch(true); break;
+    case 'search-add': changeQuantity(id, 1); break;
     case 'service-category':
       if (serviceCategory !== id && Object.hasOwn(serviceCategories, id)) {
         serviceCategory = id;
