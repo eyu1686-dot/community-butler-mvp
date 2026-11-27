@@ -1,14 +1,14 @@
 {
   "id": "./",
-  "name": "邻里小站 · 阳光花园一期",
-  "short_name": "邻里小站",
+  "name": "云邸生活礼宾部 · 阳光花园一号院",
+  "short_name": "云邸生活礼宾部",
   "lang": "zh-CN",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FAF7F2",
-  "theme_color": "#FAF7F2",
+  "background_color": "#F6F5F1",
+  "theme_color": "#F6F5F1",
   "icons": [
     { "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "./assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }

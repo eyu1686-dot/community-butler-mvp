@@ -1,24 +1,33 @@
 const direct = [
   { id:'dandong', name:'丹东红颜草莓', detail:'500 g / 盒', photo:'strawberries', base:42, tiers:[6800,5900,4900], category:'fruit',
-    quality:['甜度实测 ≥ 14°','单果 25g+'], origin:'辽宁丹东 · 早市鲜果 A06 档', storage:'冷藏 0–4°C，食用前再洗，建议 2 日内吃完。', review:'3栋李姐：草莓颗颗饱满，孩子一次吃半盒。' },
+    quality:['当季头茬','逐盒挑拣'], origin:'辽宁丹东 · 鲜果合作庄园 A06', storage:'冷藏 0–4°C，食用前再洗，建议 2 日内吃完。', review:'3栋李姐：草莓颗颗饱满，孩子一次吃半盒。' },
   { id:'tiger', name:'现捞冰鲜黑虎虾', detail:'400 g / 份', photo:'shrimp', base:29, tiers:[7900,6900,5900], category:'seafood',
-    quality:['足斤足两去冰重','全程冰鲜'], origin:'广东湛江 · 早市海鲜 B03 档', storage:'收货后冷藏，当天煮熟食用；不能当天吃可密封冷冻。', review:'6栋刘叔：复秤去冰重，回家一煮肉质很紧实。' },
+    quality:['足斤足两去冰重','全程冰鲜'], origin:'广东湛江 · 港口直供合作点 B03', storage:'收货后冷藏，当天煮熟食用；不能当天吃可密封冷冻。', review:'6栋刘叔：复秤去冰重，回家一煮肉质很紧实。' },
   { id:'chile', name:'智利车厘子 3J', detail:'500 g / 盒', photo:'cherries', base:9, tiers:[8900,7900,6900], category:'fruit',
-    quality:['3J 大果规格','逐盒挑检'], origin:'智利中部产区 · 早市进口果 A12 档', storage:'保持干燥冷藏，食用前冲洗。', review:'2栋张姐：果柄青绿，果肉脆甜。' },
+    quality:['3J 大果规格','逐盒挑检'], origin:'智利中部产区 · 冷链进口合作点 A12', storage:'保持干燥冷藏，食用前冲洗。', review:'2栋张姐：果柄青绿，果肉脆甜。' },
   { id:'hairtail', name:'舟山带鱼段', detail:'500 g / 份', photo:'fish', base:24, tiers:[3900,3500,2900], category:'seafood',
-    quality:['净重 500 g','分段净切'], origin:'浙江舟山 · 早市海鲜 B07 档', storage:'密封冷藏，当天烧制；暂不食用请冷冻。', review:'5栋吴姨：鱼段切得整齐，红烧省了不少工。' },
+    quality:['净重 500 g','分段净切'], origin:'浙江舟山 · 港口直供合作点 B07', storage:'密封冷藏，当天烧制；暂不食用请冷冻。', review:'5栋吴姨：鱼段切得整齐，红烧省了不少工。' },
   { id:'eggs', name:'农家散养土鸡蛋 30 枚', detail:'30 枚 / 盒', photo:'eggs', base:34, tiers:[4900,4500,3900], category:'pantry',
-    quality:['逐枚查裂','当天装盒'], origin:'安徽宣城 · 早市粮蛋 C02 档', storage:'原盒冷藏，生熟分开，充分加热后食用。', review:'1栋何姐：到手每颗都完整，正好够一家人吃几天。' },
-  { id:'pumpkin', name:'有机贝贝南瓜', detail:'约 1 kg / 份', photo:'pumpkin', base:19, tiers:[2900,2400,1990], category:'vegetable',
-    quality:['农残检测合格','粉糯小果'], origin:'山东寿光 · 早市有机蔬菜 D05 档', storage:'完整果放阴凉处，切开后密封冷藏并尽快食用。', review:'3栋周姐：蒸熟很粉糯，孩子用勺挖着吃。' },
+    quality:['逐枚查裂','当天装盒'], origin:'安徽宣城 · 散养基地合作点 C02', storage:'原盒冷藏，生熟分开，充分加热后食用。', review:'1栋何姐：到手每颗都完整，正好够一家人吃几天。' },
+  { id:'pumpkin', name:'贝贝南瓜', detail:'约 1 kg / 份', photo:'pumpkin', base:19, tiers:[2900,2400,1990], category:'vegetable',
+    quality:['粉糯小果','整果分装'], origin:'山东寿光 · 当季蔬菜合作庄园 D05', storage:'完整果放阴凉处，切开后密封冷藏并尽快食用。', review:'3栋周姐：蒸熟很粉糯，孩子用勺挖着吃。' },
 ];
-const freshCategories = { all:'全部爆品', fruit:'时令鲜果', seafood:'现捞海鲜', vegetable:'有机蔬菜', pantry:'粮油蛋奶' };
+const freshCategories = { all:'全部臻选', fruit:'时令鲜果', seafood:'现捞海鲜', vegetable:'当季蔬菜', pantry:'粮油蛋奶' };
+const freshEditorial = {
+  dandong:'SEASONAL FRUIT · 丹东核心产区',
+  tiger:'COASTAL SELECTION · 湛江',
+  chile:'ORCHARD SELECTION · 智利中部',
+  hairtail:'COASTAL SELECTION · 舟山',
+  eggs:'PANTRY SELECTION · 安徽宣城',
+  pumpkin:'GARDEN SELECTION · 山东寿光',
+};
+const allocationLabels = ['基础礼遇价 · 满 10 份','满 30 份尊享价','满 50 份庄园直供价'];
 let freshCategory = 'all';
 
 const marketScenes = [
-  { photo:'scene-check', title:'开箱验货挑果', time:'05:30', inspector:'李管家', detail:'开箱检查成熟度与表皮，挑除压伤软果。' },
-  { photo:'scene-scale', title:'现场复秤去皮重', time:'05:37', inspector:'周管家', detail:'秤归零后去皮重，分别记录商品净重。' },
-  { photo:'scene-ice', title:'冷链泡沫箱加冰直发', time:'05:45', inspector:'陈管家', detail:'装箱前补冰并封箱，送往小区自提点。' },
+  { photo:'scene-check', title:'丹东核心庄园头茬采摘', time:'05:15', inspector:'李管家', detail:'按成熟度采摘，逐盒检查果实状态。' },
+  { photo:'scene-scale', title:'到货挑拣与复秤', time:'05:40', inspector:'周管家', detail:'挑出挤压或破损果，分装后复核净重。' },
+  { photo:'scene-ice', title:'恒温冷链专箱启运', time:'06:30', inspector:'陈管家', detail:'装载前复核箱温，按批次封签启运。' },
 ];
 
 function freshImage(photo, label, loading = 'lazy') {
@@ -44,12 +53,12 @@ function carouselMarkup(label, slides, options = {}) {
 function marketCarousel() {
   const slides = marketScenes.map(scene => `<article class="market-slide">
     ${freshImage(scene.photo, scene.title, 'eager')}
-    <div class="market-caption"><p><time>${scene.time}</time><span>质检签名 · ${scene.inspector}</span></p>
+    <div class="market-caption"><p><time>${scene.time}</time><span>流程记录 · ${scene.inspector}</span></p>
       <h3>${scene.title}</h3><small>${scene.detail}</small></div>
   </article>`);
   return `<section class="market-carousel" aria-labelledby="market-title">
-    <div class="section-head"><div><h2 id="market-title">今日早 5:30 批发市场直采</h2><p>模拟溯源画面 · 左右滑动查看</p></div></div>
-    ${carouselMarkup('批发市场直采场景', slides, { trackClass:'market-track', arrows:true })}
+    <div class="section-head"><div><h2 id="market-title">今日庄园与港口直供实录</h2><p>模拟溯源画面 · 左右滑动查看</p></div></div>
+    ${carouselMarkup('庄园与港口直供场景', slides, { trackClass:'market-track', arrows:true })}
   </section>`;
 }
 
@@ -164,8 +173,8 @@ function syncCarousels() {
 
 function groupTiers(item) {
   const level = tier(item);
-  return `<div class="tiers" aria-label="阶梯拼团价">${item.tiers.map((price,index) =>
-    `<div class="tier ${index === level ? 'unlocked' : ''}"><span>满 ${thresholds[index]} 份</span><strong>¥${price/100}</strong><small>${index === level ? '当前团价' : index < level ? '已达标' : '待解锁'}</small></div>`).join('')}</div>`;
+  return `<div class="tiers" aria-label="邻里私享订购配额">${item.tiers.map((price,index) =>
+    `<div class="tier ${index === level ? 'unlocked' : ''}"><span>${allocationLabels[index]}</span><strong>¥${price/100}</strong><small>${index === level ? '当前礼遇价' : index < level ? '已达标' : '待解锁'}</small></div>`).join('')}</div>`;
 }
 
 function freshGallery(item) {
@@ -180,10 +189,10 @@ function showFreshDetail(item, fromSearch = false) {
     ${fromSearch ? '<button class="secondary" data-action="search-back">返回搜索结果</button>' : ''}
     <div class="fresh-gallery">${freshGallery(item)}</div>
     <p class="search-price">${searchPrice(item)}</p>
-    <p>${item.detail} · 已拼 ${joined(item)}/${limit} 份</p>
-    <section><h3>生鲜详情与溯源</h3><p>${item.origin}</p><p>储藏建议：${item.storage}</p><p>图片为商品示意，档口和质检数据为演示。</p></section>
+    <p>${item.detail} · 已预订 ${joined(item)}/${limit} 份</p>
+    <section><h3>生鲜详情与溯源</h3><p>${item.origin}</p><p>储藏建议：${item.storage}</p><p>商品图片仅供参考，产地记录为演示。</p></section>
     <section><h3>本小区已购短评 · 演示</h3><p>“${item.review}”</p></section>
-    <section><h3>阶梯拼团价</h3>${groupTiers(item)}<p>北京时间 22:00 截单，按提交时解锁的价格结算。</p></section>
+    <section><h3>邻里私享订购配额</h3>${groupTiers(item)}<p>北京时间 22:00 截单，按提交时解锁的价格结算。</p></section>
     ${searchAction(item)}
   </div>`);
   dialog.scrollTop = 0;
@@ -364,7 +373,7 @@ function giftCards() {
     const difference = gift.cost - availablePoints();
     const action = !stock ? '已兑完' : difference > 0 ? `还差 ${formatPoints(difference)} 积分` : '立即兑换';
     return `<article class="gift-card" data-gift="${gift.id}">
-      <span class="gift-icon">${icon(gift.icon)}</span><h3>${gift.name}</h3>
+      <div class="gift-plate">${freshImage('gift-' + gift.id, gift.name)}</div><h3>${gift.name}</h3>
       <strong>${formatPoints(gift.cost)} 积分</strong><p class="muted">${giftLevels[gift.level]} · 剩余 ${stock} 件</p>
       <button class="primary" data-action="gift-confirm" data-id="${gift.id}" aria-label="${action} · ${gift.name}" ${stock && difference <= 0 ? '' : 'disabled'}>${action}</button>
     </article>`;
@@ -373,8 +382,8 @@ function giftCards() {
 
 function showGiftHall(reset = false) {
   if (reset) giftCategory = 'all';
-  openRewards('邻里积分兑换馆', `<div class="rewards-balance">
-      <div>可用积分<strong>${formatPoints(availablePoints())}</strong></div>
+  openRewards('积分礼遇馆', `<div class="rewards-balance">
+      <div><span class="membership-label">PRIVATE MEMBERSHIP · 私享会籍</span>可用积分<strong>${formatPoints(availablePoints())}</strong></div>
       <button class="secondary" data-action="points-history">积分明细</button>
       <button class="secondary" data-action="gift-history">兑换记录</button>
     </div>
@@ -416,7 +425,7 @@ function confirmGift(id) {
   if (!gift || !giftStock(gift) || availablePoints() < gift.cost) return;
   openRewards('确认兑换', `<div class="gift-confirmation">
     <h3>${gift.name}</h3><p>将扣除 ${formatPoints(gift.cost)} 积分</p>
-    <p>绑定地址：阳光花园一期 · ${residentAddress.building} ${residentAddress.room}</p>
+    <p>绑定地址：阳光花园一号院 · ${residentAddress.building} ${residentAddress.room}</p>
     <p>${fulfillment}。</p>
     <div class="search-actions"><button class="secondary" data-action="gift-back">返回兑换馆</button>
     <button class="primary" data-action="gift-redeem" data-id="${gift.id}">确认兑换</button></div></div>`);
@@ -446,29 +455,29 @@ function redeemGift(id) {
 
 function freshPage() {
   return `<section class="hero market-hero">
-    <img src="./assets/market.jpg" alt="" fetchpriority="high" width="724" height="724">
-    <div><span class="eyebrow">今晚 22:00 截单 · 明早 5 点采购</span>
-      <h1>明日批发市场<br>直采拼团</h1>
-      <p>拼得越多，价格越低。当天采，当天到。</p>
-      <button class="primary" data-action="browse">查看限量鲜货</button>
+    <img src="./assets/estate-hero.jpg" alt="" fetchpriority="high" width="1280" height="800">
+    <div><span class="eyebrow">每日 05:30 原产地直采配额</span>
+      <h1>业主私享<br>鲜食礼遇</h1>
+      <p>严选核心产区头茬鲜品，冷链专车直达府邸</p>
+      <button class="primary" data-action="browse">臻选今日鲜食</button>
     </div>
   </section>
   ${marketCarousel()}
   <button class="trace" data-action="trace">
     <span class="trace-play" aria-hidden="true">▶</span>
-    <span><strong>今日早 5:30 批发市场直采实拍</strong><small>演示预览 · 看采购、挑拣与复秤</small></span>
+    <span><strong>直供流程影像</strong><small>从庄园采摘到恒温启运 · 演示预览</small></span>
   </button>
   <button class="rewards-banner" data-action="gift-hall"><span>${icon('gift')}</span><span>
-    <strong>消费攒积分 · 免费换家电/玩具</strong><small>当前可用 ${formatPoints(availablePoints())} 积分</small></span></button>
+    <strong>业主会籍礼遇 · 积分兑换精选好礼</strong><small>当前可用 ${formatPoints(availablePoints())} 积分</small></span></button>
   <section id="catalog" aria-labelledby="catalog-title">
-    <div class="section-head"><h2 id="catalog-title" tabindex="-1">每日限量直采</h2><p>每款限 50 份</p></div>
-    <p class="group-note">品质标签与已拼份数为演示数据。按提交时已解锁的阶梯价结算。</p>
+    <div class="section-head"><h2 id="catalog-title" tabindex="-1">当季鲜食臻选</h2><p>每款配额 50 份</p></div>
+    <p class="group-note">商品规格与订购进度为演示。按提交时已生效的礼遇价结算。</p>
     <div class="service-filters fresh-filters" role="group" aria-label="生鲜分类">${Object.entries(freshCategories).map(([id,label]) =>
       `<button class="service-filter" data-action="fresh-category" data-id="${id}" aria-pressed="${id === freshCategory}">${label}</button>`).join('')}</div>
     <div class="group-products">${direct.map(item => `<article class="group-product" data-product="${item.id}" ${freshCategory === 'all' || item.category === freshCategory ? '' : 'hidden'}>
       <button class="fresh-photo" data-action="fresh-detail" data-id="${item.id}" aria-label="查看生鲜详情 · ${item.name}">${freshImage(item.photo, item.name)}</button>
       <div class="group-summary">
-        <div><h3><button class="fresh-title" data-action="fresh-detail" data-id="${item.id}">${item.name}</button></h3><p class="muted">${item.detail}</p>
+        <div><p class="editorial-label">${freshEditorial[item.id]}</p><h3><button class="fresh-title" data-action="fresh-detail" data-id="${item.id}">${item.name}</button></h3><p class="muted">${item.detail}</p>
           <strong class="price" data-group-price></strong><small data-price-label></small></div></div>
       <div class="quality-tags">${item.quality.map(label => `<span>${label}</span>`).join('')}</div>
       <p class="cutoff" data-cutoff></p>
@@ -490,16 +499,16 @@ function refreshGroups() {
     const level = tier(item);
     card.querySelector('[data-cutoff]').textContent = remaining ? `距今晚 22:00 截单还剩 ${clock}` : '今晚已截单';
     card.querySelector('[data-group-price]').textContent = money(displayPrice(item));
-    card.querySelector('[data-price-label]').textContent = level < 0 ? ' / 份 · 首档参考价' : ' / 份 · 已解锁';
-    card.querySelector('[data-joined]').textContent = `已拼 ${count}/${limit} 份`;
+    card.querySelector('[data-price-label]').textContent = level < 0 ? ' / 份 · 基础礼遇参考价' : ' / 份 · 礼遇已生效';
+    card.querySelector('[data-joined]').textContent = `已预订 ${count}/${limit} 份`;
     card.querySelector('progress').value = count;
     card.querySelectorAll('.tier').forEach((element,index) => {
       element.classList.toggle('unlocked', index === level);
-      element.querySelector('small').textContent = index === level ? '当前团价' : index < level ? '已达标' : '待解锁';
+      element.querySelector('small').textContent = index === level ? '当前礼遇价' : index < level ? '已达标' : '待解锁';
     });
     const button = card.querySelector('.join');
     button.disabled = !remaining || count >= limit;
-    button.textContent = !remaining ? '已截单' : count >= limit ? '已拼满' : state.cart[item.id] ? '加一份' : '一键参团';
+    button.textContent = !remaining ? '已截单' : count >= limit ? '本批已订满' : state.cart[item.id] ? '加一份' : '预订一份';
     button.setAttribute('aria-label', `${button.textContent} · ${item.name}`);
   }
 }
@@ -512,15 +521,10 @@ function openInfo(title, content) {
   syncCarousels();
 }
 
-const preview = [
-  ['market', '05:30 · 到场采购', '查看当日批发市场到货，记录货源与批次。'],
-  ['sorting', '05:35 · 现场挑拣', '逐盒查看果蒂和表皮，剔除压伤、软烂的果子。'],
-  ['shrimp', '05:40 · 称重复核', '先清零去皮，复核净重，冰鲜产品称重后立即复冰。'],
-];
 function drawPreview() {
-  const [photo, title, detail] = preview[previewFrame];
-  dialog.querySelector('[data-preview]').innerHTML = `<img src="./assets/${photo}.jpg" alt="">
-    <p><strong>${title}</strong></p><p class="muted">${detail}</p>`;
+  const scene = marketScenes[previewFrame];
+  dialog.querySelector('[data-preview]').innerHTML = `<img src="./assets/${scene.photo}.jpg" alt="">
+    <p><strong>${scene.time} · ${scene.title}</strong></p><p class="muted">${scene.detail}</p>`;
 }
 function stopPreview() {
   clearInterval(previewTimer);
@@ -530,7 +534,7 @@ function playPreview() {
   stopPreview();
   previewTimer = setInterval(() => {
     if (!dialog.open || !dialog.querySelector('[data-preview]')) return stopPreview();
-    previewFrame = (previewFrame + 1) % preview.length;
+    previewFrame = (previewFrame + 1) % marketScenes.length;
     drawPreview();
   }, 3600);
 }
@@ -579,7 +583,7 @@ const searchAliases = {
   chile:'车厘子 樱桃 水果 生鲜',
   hairtail:'带鱼 海鲜 生鲜',
   eggs:'鸡蛋 土鸡蛋 蛋奶 粮油 生鲜',
-  pumpkin:'贝贝南瓜 有机蔬菜 青菜 生鲜',
+  pumpkin:'贝贝南瓜 当季蔬菜 青菜 生鲜',
 };
 const searchEndorsements = {
   parcel:'赵阿姨 · 本小区已服务 46 户',
@@ -599,17 +603,17 @@ function searchMatches(item, query) {
 }
 
 function searchPrice(item) {
-  return item.tiers ? `${servicePrice(displayPrice(item))} / 份 · ${tier(item) < 0 ? '首档参考价' : '当前团价'}` : `${servicePrice(item.price)} ${item.unit}`;
+  return item.tiers ? `${servicePrice(displayPrice(item))} / 份 · ${tier(item) < 0 ? '基础礼遇参考价' : '当前礼遇价'}` : `${servicePrice(item.price)} ${item.unit}`;
 }
 
 function searchEndorsement(item) {
   if (item.worker) return `${item.worker} · 本小区已服务 ${item.households} 户`;
-  return searchEndorsements[item.id] || '管家市场直采 · 到货抽检';
+  return searchEndorsements[item.id] || '礼宾产地直采 · 到货复秤';
 }
 
 function searchAction(item) {
   if (!item.tiers) return `<button class="primary" data-action="book-service" data-id="${item.id}" aria-label="立即预约 · ${item.name}">立即预约</button>`;
-  const unavailable = !batchTime().remaining ? '已截单' : joined(item) >= limit ? '已拼满' : '';
+  const unavailable = !batchTime().remaining ? '已截单' : joined(item) >= limit ? '本批已订满' : '';
   return `<button class="primary" data-action="search-add" data-id="${item.id}" aria-label="${unavailable || '加购'} · ${item.name}" ${unavailable ? 'disabled' : ''}>${unavailable || '加购'}</button>`;
 }
 
@@ -685,7 +689,7 @@ function selectPage() {
   const errands = serviceCategory === 'errands';
   const items = neighborhoodServices.filter(item => item.category === serviceCategory);
   return `<header class="page-head select-hero">
-    <h1>邻里严选</h1><p>阳光花园一期 · 本小区实测背书服务</p>
+    <h1>邻里严选</h1><p>阳光花园一号院 · 经礼宾核验的到家服务</p>
   </header>
   <div class="service-filters" role="group" aria-label="服务分类">
     ${Object.entries(serviceCategories).map(([id, label]) => `<button class="service-filter" data-action="service-category" data-id="${id}" aria-pressed="${id === serviceCategory}">${label}</button>`).join('')}
@@ -876,7 +880,7 @@ function servicePage() {
   }).join('');
   const oldRequests = state.requests.map(request => `<li>${escapeHtml(request.type)} · ${escapeHtml(request.detail)}</li>`).join('');
   return `<header class="page-head after-head">
-    <h1>管家售后</h1><p>阳光花园一期 · 本月服务承诺</p>
+    <h1>管家售后</h1><p>阳光花园一号院 · 本月服务承诺</p>
     <div class="service-metrics">
       <div><strong>100%</strong><span>售后秒赔率</span></div>
       <div><strong>3 分钟</strong><span>平均响应时间</span></div>
@@ -900,7 +904,7 @@ function servicePage() {
   <section class="panel"><h2>一对一专属管家留言 / 需求许愿池</h2>
     <form id="wish-form">
       <label class="field">留言去向<select name="audience"><option value="wish">发布到小区许愿池</option><option value="private">仅留言给专属管家</option></select></label>
-      <label class="field">想告诉管家什么？<textarea name="wish" required maxlength="160" rows="2" placeholder="明天想团购什么水果/海鲜？"></textarea></label>
+      <label class="field">想告诉管家什么？<textarea name="wish" required maxlength="160" rows="2" placeholder="希望礼宾下次为您甄选哪些水果或海鲜？"></textarea></label>
       <button class="primary" type="submit">提交留言</button>
     </form>
     <h3 class="wish-heading">邻里许愿列表</h3><p class="muted">留言与投票仅保存在当前浏览器。</p>
@@ -1028,7 +1032,7 @@ const inviteCode = 'YG3-28';
 let dashboardOpen = false;
 
 const dashboardMetrics = [
-  ['覆盖户数','1,500 户','阳光花园一期'],
+  ['覆盖户数','1,500 户','阳光花园一号院'],
   ['种子渗透率','21.3%','320 户 / 1,500 户'],
   ['生鲜周复购率','64%','按周统计下单住户'],
   ['单户获客成本','¥3.2','种子住户获客口径'],
@@ -1044,7 +1048,7 @@ const customers = [
   { id:'wang', address:'5栋1102', name:'王先生', total:89000, count:9, tags:['海鲜','空调维修'], items:['现捞冰鲜黑虎虾','空调挂机清洗','舟山带鱼段'], redeemed:0 },
   { id:'chen', address:'2栋602', name:'陈女士', total:96000, count:11, tags:['水电维修','时令鲜果'], items:['更换水龙头/软管','智利车厘子 3J','丹东红颜草莓'], redeemed:100 },
   { id:'zhou', address:'1栋302', name:'周先生', total:62000, count:6, tags:['粮油蛋奶','海鲜'], items:['农家散养土鸡蛋 30 枚','舟山带鱼段'], redeemed:0 },
-  { id:'xu', address:'6栋401', name:'许女士', total:122000, count:12, tags:['日常保洁','有机蔬菜'], items:['三居室深度日常保洁','有机贝贝南瓜'], redeemed:180 },
+  { id:'xu', address:'6栋401', name:'许女士', total:122000, count:12, tags:['日常保洁','当季蔬菜'], items:['三居室深度日常保洁','贝贝南瓜'], redeemed:180 },
   { id:'zhao', address:'3栋902', name:'赵先生', total:46000, count:7, tags:['跑腿','时令鲜果'], items:['代取驿站快递','丹东红颜草莓','智利车厘子 3J'], redeemed:100 },
   { id:'liu', address:'5栋702', name:'刘女士', total:75000, count:8, tags:['海鲜','粮油蛋奶'], items:['现捞冰鲜黑虎虾','舟山带鱼段','农家散养土鸡蛋 30 枚'], redeemed:0 },
 ];
@@ -1145,7 +1149,7 @@ function communityDashboard() {
 
 function communityPage() {
   const header = `<header class="page-head community-head">
-    <div><h1>我的小区</h1><p>阳光花园一期</p></div>
+    <div><h1>我的小区</h1><p>阳光花园一号院</p></div>
     <button class="secondary dashboard-toggle" data-action="dashboard" aria-pressed="${dashboardOpen}">经营看板</button>
   </header>`;
   if (dashboardOpen) return header + communityDashboard();
@@ -1231,7 +1235,7 @@ function checkoutBlocker(lines) {
     const item = direct.find(product => product.id === line.id);
     if (!item) continue;
     if (!batchTime().remaining) return '直采已截单，请移除直采商品';
-    if (tier(item) < 0) return `${item.name}还差 ${thresholds[0] - joined(item)} 份成团`;
+    if (tier(item) < 0) return `${item.name}还差 ${thresholds[0] - joined(item)} 份达到基础配额`;
   }
   return '';
 }
@@ -1282,8 +1286,8 @@ function changeQuantity(id, delta) {
         dialogContent.querySelector('.dialog-head').after(warning);
       }
       warning.hidden = false;
-      warning.textContent = batchTime().remaining ? '该商品已拼满' : '该商品已截单';
-    } else notify(batchTime().remaining ? '该商品已拼满' : '该商品已截单');
+      warning.textContent = batchTime().remaining ? '该商品本批已订满' : '该商品已截单';
+    } else notify(batchTime().remaining ? '该商品本批已订满' : '该商品已截单');
     return;
   }
   const quantity = (state.cart[id] || 0) + delta;
@@ -1502,7 +1506,7 @@ document.addEventListener('click', event => {
       })();
       break;
     case 'leader':
-      openInfo('申请成为本栋楼长', '<p>为 3 栋邀请邻居、收集团购需求，并协助同步自提安排。</p><button class="primary leader-submit" data-action="submit-leader">提交演示申请</button>');
+      openInfo('申请成为本栋楼长', '<p>为 3 栋邀请邻居、收集鲜食预订需求，并协助同步自提安排。</p><button class="primary leader-submit" data-action="submit-leader">提交演示申请</button>');
       break;
     case 'submit-leader':
       state.leaderApplied = true;
@@ -1513,16 +1517,16 @@ document.addEventListener('click', event => {
     case 'reorder': reorder(id); break;
     case 'bag': showBag(); break;
     case 'quality':
-      openInfo('本小区品质公约', `<ul class="agreement">
-        <li><strong>早 5 点市场直采</strong><p>当天采购，当天分拣到店。</p></li>
-        <li><strong>农残 / 新鲜度实拍</strong><p>展示当批抽检与到货状态。</p></li>
-        <li><strong>坏果无条件秒赔</strong><p>发现坏果可直接通过管家售后登记。</p></li>
-        <li><strong>不卖隔夜货</strong><p>每日限量，批次到期下架。</p></li>
+      openInfo('业主服务宪章', `<ul class="agreement">
+        <li><strong>清晨产地直采</strong><p>按批采摘或收货，分装后冷链直送。</p></li>
+        <li><strong>到货挑拣与复秤</strong><p>按批记录到货状态，分装后复核净重。</p></li>
+        <li><strong>品质问题优先处理</strong><p>发现坏果可直接通过管家售后登记。</p></li>
+        <li><strong>按日鲜食配额</strong><p>每日限量，批次到期下架。</p></li>
       </ul>`);
       break;
     case 'trace':
       previewFrame = 0;
-      openInfo('今日直采实拍 · 模拟画面', '<div class="preview-frame" data-preview></div><div class="preview-actions"><button class="primary" data-action="toggle-preview">暂停预览</button><button class="icon-button" data-action="next-frame">下一幕</button></div>');
+      openInfo('直供流程影像 · 演示', '<div class="preview-frame" data-preview></div><div class="preview-actions"><button class="primary" data-action="toggle-preview">暂停预览</button><button class="icon-button" data-action="next-frame">下一幕</button></div>');
       drawPreview();
       playPreview();
       break;
@@ -1531,7 +1535,7 @@ document.addEventListener('click', event => {
       else { playPreview(); button.textContent = '暂停预览'; }
       break;
     case 'next-frame':
-      previewFrame = (previewFrame + 1) % preview.length;
+      previewFrame = (previewFrame + 1) % marketScenes.length;
       drawPreview();
       break;
     case 'close': dialog.close(); break;
